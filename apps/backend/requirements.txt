@@ -16,8 +16,7 @@ httpx==0.27.0
 python-dotenv==1.0.1
 
 # Кеширование
-redis==5.0.1
-redis-py-cluster==2.1.3
+redis-py-cluster
 
 # Тестирование
 pytest==8.0.0
