@@ -1,4 +1,5 @@
 import uuid
+import json
 from io import BytesIO
 import logging
 from typing import Dict, List, Optional
@@ -43,7 +44,8 @@ class MinioService:
                         }
                     ]
                 }
-                self.client.set_bucket_policy(self.bucket_name, policy)
+                policy_str = json.dumps(policy)  # <-- Сериализация словаря в строку
+                self.client.set_bucket_policy(self.bucket_name, policy_str)  # <-- Передаём строку!
             else:
                 logger.info(f"Bucket '{self.bucket_name}' already exists")
         except S3Error as err:
