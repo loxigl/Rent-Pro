@@ -35,22 +35,22 @@ test:
 
 # Остановка контейнеров
 down:
-	@cd docker && docker-compose -f $(DOCKER_COMPOSE_DEV) down
+	@docker-compose -f $(DOCKER_COMPOSE_DEV) down
 
 # Полная очистка
 clean:
-	@cd docker && docker-compose -f $(DOCKER_COMPOSE_DEV) down -v
+	@docker-compose -f $(DOCKER_COMPOSE_DEV) down -v
 	@echo "Все контейнеры и данные удалены"
 
 # Пересборка контейнеров
 rebuild:
-	@cd docker && docker-compose -f $(DOCKER_COMPOSE_DEV) build
+	@docker-compose -f $(DOCKER_COMPOSE_DEV) build
 	@echo "Контейнеры пересобраны"
 
 # Деплой на продакшен
 deploy:
 	@echo "Выполняется деплой на продакшен..."
-	@cd docker && docker-compose -f $(DOCKER_COMPOSE_PROD) up -d
+	@docker-compose -f $(DOCKER_COMPOSE_PROD) up -d
 	@echo "Деплой завершен"
 
 # Инициализация MinIO
