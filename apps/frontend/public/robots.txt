@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /catalog
+Allow: /apartment/*
+
+# Disallow admin routes and API
+Disallow: /admin/*
+Disallow: /api/*
+
+# Disallow query parameters except for pagination and sorting
+Disallow: /*?*utm_*
+Disallow: /*?*ref=*
+
+# Crawl delay for heavy search engines
+User-agent: Baiduspider
+Crawl-delay: 10
+
+# Site map
+Sitemap: https://avitorentpro.ru/sitemap.xml

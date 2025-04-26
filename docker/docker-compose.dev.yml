@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-avitorentpro}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - avitorentpro-dev
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio123}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - avitorentpro-dev
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - avitorentpro-dev
+
+  backend:
+    build:
+      context: ../apps/backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../apps/backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-avitorentpro}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio123}
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - MINIO_BUCKET=${MINIO_BUCKET:-apartments}
+      - MINIO_USE_SSL=False
+      - PHOTOS_BASE_URL=http://localhost:9000/${MINIO_BUCKET:-apartments}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=True
+    networks:
+      - avitorentpro-dev
+
+  celery_worker:
+    build:
+      context: ../apps/backend
+      dockerfile: Dockerfile.dev
+    command: celery -A src.celery_worker worker --loglevel=info
+    volumes:
+      - ../apps/backend:/app
+    depends_on:
+      - redis
+      - backend
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-avitorentpro}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio123}
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - MINIO_BUCKET=${MINIO_BUCKET:-apartments}
+      - MINIO_USE_SSL=False
+      - PHOTOS_BASE_URL=http://localhost:9000/${MINIO_BUCKET:-apartments}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=True
+    networks:
+      - avitorentpro-dev
+
+  # Для локальной разработки frontend запускается отдельно через npm run dev
+  # но можно добавить и контейнер для полной изоляции
+  frontend-dev:
+    build:
+      context: ../apps/frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../apps/frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+      - NEXT_PUBLIC_MINIO_HOST=localhost
+    depends_on:
+      - backend
+    networks:
+      - avitorentpro-dev
+
+volumes:
+  pgdata:
+  minio-data:
+  redis-data:
+
+networks:
+  avitorentpro-dev:
+    driver: bridge
