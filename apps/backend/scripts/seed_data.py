@@ -44,9 +44,9 @@ test_apartments = [
         """,
         "active": True,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+1-1", "sort_order": 0},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+1-2", "sort_order": 1},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+1-3", "sort_order": 2},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+1-1", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+1-2", "sort_order": 1},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+1-3", "sort_order": 2},
         ]
     },
     {
@@ -71,10 +71,10 @@ test_apartments = [
         """,
         "active": True,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+2-1", "sort_order": 0},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+2-2", "sort_order": 1},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+2-3", "sort_order": 2},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+2-4", "sort_order": 3},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+2-1", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+2-2", "sort_order": 1},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+2-3", "sort_order": 2},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+2-4", "sort_order": 3},
         ]
     },
     {
@@ -100,9 +100,9 @@ test_apartments = [
         """,
         "active": True,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+3-1", "sort_order": 0},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+3-2", "sort_order": 1},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+3-3", "sort_order": 2},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+3-1", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+3-2", "sort_order": 1},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+3-3", "sort_order": 2},
         ]
     },
     {
@@ -128,8 +128,8 @@ test_apartments = [
         """,
         "active": True,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+4-1", "sort_order": 0},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+4-2", "sort_order": 1},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+4-1", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+4-2", "sort_order": 1},
         ]
     },
     {
@@ -155,11 +155,11 @@ test_apartments = [
         """,
         "active": True,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+5-1", "sort_order": 0},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+5-2", "sort_order": 1},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+5-3", "sort_order": 2},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+5-4", "sort_order": 3},
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Apartment+5-5", "sort_order": 4},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+5-1", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+5-2", "sort_order": 1},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+5-3", "sort_order": 2},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+5-4", "sort_order": 3},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Apartment+5-5", "sort_order": 4},
         ]
     },
     # Неактивная квартира (не должна отображаться в каталоге)
@@ -173,7 +173,7 @@ test_apartments = [
         "description": "Эта квартира не должна отображаться в каталоге, так как active = False",
         "active": False,
         "photos": [
-            {"url": "https://via.placeholder.com/1920x1080.jpg?text=Hidden", "sort_order": 0},
+            {"url": "https://placehold.co/1920x1080.jpg?text=Hidden", "sort_order": 0},
         ]
     }
 ]

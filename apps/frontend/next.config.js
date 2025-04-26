@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'minio', process.env.NEXT_PUBLIC_MINIO_HOST || 'localhost'],
+    domains: ['localhost', 'minio', process.env.NEXT_PUBLIC_MINIO_HOST || 'localhost', 'placehold.co'],
     formats: ['image/webp'],
   },
   experimental: {
