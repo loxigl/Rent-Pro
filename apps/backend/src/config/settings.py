@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     JPEG_QUALITY: int = 85  # 0-100
     WEBP_QUALITY: int = 80  # 0-100
 
+    # Параметры для кэширования
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+
     class Config:
         env_file = ".env"
 
