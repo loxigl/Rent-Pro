@@ -70,8 +70,6 @@ cd $ROOT_DIR/apps/frontend
 if [ ! -f .env ]; then
   echo -e "${YELLOW}📄 Создаем .env файл для фронтенда...${NC}"
   cp .env.sample .env
-  # Обновляем API URL для корректной работы с бэкендом
-  sed -i -e 's|NEXT_PUBLIC_API_URL=http://localhost:8000|NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1|g' .env || true
   echo -e "${GREEN}✅ Файл .env создан${NC}"
 else
   echo -e "${YELLOW}📄 Файл .env уже существует${NC}"
