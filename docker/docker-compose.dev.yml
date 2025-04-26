@@ -60,6 +60,8 @@ services:
       - "8000:8000"
     volumes:
       - ../apps/backend:/app
+    env_file:
+      - ../apps/backend/.env
     depends_on:
       db:
         condition: service_healthy
@@ -115,8 +117,6 @@ services:
     networks:
       - avitorentpro-dev
 
-  # Для локальной разработки frontend запускается отдельно через npm run dev
-  # но можно добавить и контейнер для полной изоляции
   frontend-dev:
     build:
       context: ../apps/frontend
@@ -126,10 +126,8 @@ services:
     volumes:
       - ../apps/frontend:/app
       - /app/node_modules
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
-      - NEXT_PUBLIC_MINIO_HOST=localhost
+    env_file:
+      - ../apps/frontend/.env
     depends_on:
       - backend
     networks:
