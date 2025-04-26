@@ -39,7 +39,7 @@ class ApartmentPhoto(Base):
     apartment_id = Column(Integer, ForeignKey("apartment.id", ondelete="CASCADE"), nullable=False)
     url = Column(String(255), nullable=False)
     sort_order = Column(Integer, nullable=False, default=0)
-    metadata = Column(JSONB, nullable=True)  # Метаданные для хранения информации о вариантах изображения
+    photo_metadata = Column(JSONB, nullable=True)  # Метаданные для хранения информации о вариантах изображения
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Отношение многие-к-одному с квартирой

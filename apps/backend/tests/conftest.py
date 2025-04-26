@@ -72,7 +72,7 @@ def db():
     Создает тестовую базу данных для каждого теста.
     """
     # Создаем таблицы в тестовой БД
-    Base.metadata.create_all(bind=engine)
+    Base.photo_metadata.create_all(bind=engine)
 
     # Создаем сессию для работы с тестовой БД
     db = TestingSessionLocal()
@@ -107,7 +107,7 @@ def db():
         db.close()
 
         # Удаляем таблицы после тестов
-        Base.metadata.drop_all(bind=engine)
+        Base.photo_metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
