@@ -64,7 +64,7 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
         order,
     });
 
-    const response = await fetch(`${API_URL}/api/v1/apartments?${searchParams.toString()}`);
+    const response = await fetch(`${API_URL}/apartments?${searchParams.toString()}`);
 
     if (!response.ok) {
         throw new Error(`Failed to fetch apartments: ${response.status}`);
@@ -77,7 +77,7 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
  * Получение детальной информации о квартире по ID
  */
 export async function getApartmentById(id: number): Promise<ApartmentDetail> {
-    const response = await fetch(`${API_URL}/api/v1/apartments/${id}`);
+    const response = await fetch(`${API_URL}/apartments/${id}`);
 
     if (!response.ok) {
         throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}`);
@@ -97,7 +97,7 @@ export async function uploadApartmentPhoto(
     formData.append('apartment_id', apartmentId.toString());
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/upload`, {
+    const response = await fetch(`${API_URL}/admin/upload`, {
         method: 'POST',
         body: formData,
     });
