@@ -31,7 +31,7 @@ def invalidate_apartment_cache(apartment_id: int):
 @router.get("/apartments", response_model=PaginatedApartments)
 async def get_apartments(
         page: int = Query(1, ge=1),
-        page_size: int = Query(12, ge=6, le=40),
+        page_size: int = Query(12, ge=3, le=40),
         sort: str = Query("created_at", regex="^(created_at|price_rub)$"),
         order: str = Query("desc", regex="^(asc|desc)$"),
         db: Session = Depends(get_db)
@@ -41,7 +41,7 @@ async def get_apartments(
 
     Args:
         page: Номер страницы (от 1)
-        page_size: Количество элементов на странице (от 6 до 40)
+        page_size: Количество элементов на странице (от 3 до 40)
         sort: Поле для сортировки (created_at или price_rub)
         order: Порядок сортировки (asc или desc)
         db: Сессия БД
