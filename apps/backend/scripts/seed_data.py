@@ -184,7 +184,7 @@ def seed_database():
     db = SessionLocal()
     try:
         # Создаем таблицы, если они еще не существуют
-        Base.photo_metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
 
         # Проверяем, есть ли уже данные в таблицах
         if db.query(Apartment).count() > 0:
