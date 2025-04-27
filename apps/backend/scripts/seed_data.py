@@ -14,6 +14,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.db.database import SessionLocal, engine, Base
 from src.models.apartment import Apartment, ApartmentPhoto
+from src.models.auth import User, initialize_permissions
+from src.services.auth import hash_password
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -186,6 +188,39 @@ def seed_database():
         # Создаем таблицы, если они еще не существуют
         Base.metadata.create_all(bind=engine)
 
+        # Инициализируем разрешения для ролей
+        initialize_permissions(db)
+        logger.info("Разрешения для ролей инициализированы")
+
+        # Добавляем тестовых пользователей, если их еще нет
+        if db.query(User).count() == 0:
+            logger.info("Добавляем тестовых пользователей...")
+
+            # Владелец
+            owner = User(
+                email="owner@example.com",
+                password_hash=hash_password("password123"),
+                first_name="Иван",
+                last_name="Петров",
+                role="owner",
+                is_active=True
+            )
+            db.add(owner)
+
+            # Менеджер
+            manager = User(
+                email="manager@example.com",
+                password_hash=hash_password("password123"),
+                first_name="Мария",
+                last_name="Сидорова",
+                role="manager",
+                is_active=True
+            )
+            db.add(manager)
+
+            db.commit()
+            logger.info("Тестовые пользователи успешно добавлены")
+
         # Проверяем, есть ли уже данные в таблицах
         if db.query(Apartment).count() > 0:
             logger.info("База данных уже содержит записи, очищаем...")
@@ -216,11 +251,9 @@ def seed_database():
 
         db.commit()
         logger.info("База данных успешно заполнена!")
-
     except Exception as e:
-        db.rollback()
         logger.error(f"Ошибка при заполнении базы данных: {e}")
-
+        db.rollback()
     finally:
         db.close()
 
