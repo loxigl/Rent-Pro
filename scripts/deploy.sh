@@ -53,7 +53,7 @@ if [ "$MODE" == "prod" ]; then
     exit 1
   fi
    # Проверка наличия SSL сертификатов
-  if [ ! -f "$ROOT_DIR/docker/certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
+  if [ ! -f "$ROOT_DIR/docker/certbot/live/$DOMAIN/fullchain.pem" ]; then
     echo -e "${RED}❌ SSL сертификаты не найдены для домена $DOMAIN${NC}"
     echo -e "${RED}⚡ Пожалуйста, получите их вручную перед деплоем!${NC}"
     exit 1
