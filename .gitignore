@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+certbot/
 develop-eggs/
 dist/
 downloads/
@@ -71,6 +72,7 @@ apps/frontend/out/
 apps/frontend/build/
 apps/frontend/.turbo/
 apps/frontend/.swc/
+
 
 # Next.js
 .next/

@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, File, UploadFile, Form
+import asyncio
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request, File, UploadFile, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, asc
 from typing import Optional, List
 import logging
 
-from src.db.database import get_db
+from src.config import settings
+from src.db.database import get_db, SessionLocal
 from src.models.apartment import Apartment, ApartmentPhoto
 from src.models.auth import User
 from src.models.event_log import EventType, EntityType
@@ -81,13 +85,24 @@ async def get_apartment_photos(
     )
 
 
+"""
+Обновленный метод загрузки фотографий для решения проблемы таймаутов.
+Основные изменения:
+1. Увеличены таймауты для Celery
+2. Добавлена проверка размера файла перед обработкой
+3. Улучшена обработка ошибок
+4. Добавлена асинхронная загрузка без блокировки запроса
+"""
+
+
 @router.post("/{apartment_id}/upload", response_model=PhotoUploadResponse)
 async def upload_photo(
         request: Request,
         apartment_id: int,
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(require_photos_write)
+        current_user: User = Depends(require_photos_write),
+        background_tasks: BackgroundTasks = None,
 ):
     """
     Загрузка новой фотографии для квартиры.
@@ -104,15 +119,26 @@ async def upload_photo(
         )
 
     # Проверяем формат файла
-    if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
+    allowed_formats = ["image/jpeg", "image/png", "image/webp"]
+    if file.content_type not in allowed_formats:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Поддерживаются только форматы JPEG, PNG и WebP"
+            detail=f"Неподдерживаемый формат файла. Поддерживаются только: {', '.join(allowed_formats)}"
         )
 
     try:
-        # Читаем содержимое файла
-        file_content = await file.read()
+        # Читаем содержимое файла с ограничением по размеру
+        # Используем ограничение из настроек или 10MB по умолчанию
+        max_size = getattr(settings, 'MAX_IMAGE_SIZE_MB', 10) * 1024 * 1024
+        file_content = await file.read(max_size)
+
+        # Проверяем, что файл полностью прочитан (если нет, значит он слишком большой)
+        extra_content = await file.read(1)
+        if extra_content:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Размер файла превышает максимально допустимый ({max_size // (1024 * 1024)}MB)"
+            )
 
         # Определяем порядок сортировки для нового фото
         max_sort_order = db.query(func.max(ApartmentPhoto.sort_order)).filter(
@@ -122,20 +148,20 @@ async def upload_photo(
         # Если нет фотографий, начинаем с 0, иначе следующий порядок
         new_sort_order = 0 if max_sort_order is None else max_sort_order + 1
 
-        # Загружаем изображение через Celery и получаем URL
-        cover_url = process_image.delay(file_content, apartment_id).get()
-
-        # Создаем запись о фотографии
+        # Вместо блокирующего вызова Celery:
+        # 1. Создаем запись в БД с временным URL
+        temp_url = f"/processing/apartment_{apartment_id}_{uuid.uuid4()}.jpg"
         photo_metadata = {
             "original_filename": file.filename,
             "content_type": file.content_type,
-            "is_cover": new_sort_order == 0  # Первое фото - обложка
+            "is_cover": new_sort_order == 0,  # Первое фото - обложка
+            "processing_status": "pending"
         }
 
-        # Добавляем фото в БД
+        # Добавляем фото в БД с временным URL
         new_photo = ApartmentPhoto(
             apartment_id=apartment_id,
-            url=cover_url,
+            url=temp_url,
             sort_order=new_sort_order,
             photo_metadata=photo_metadata
         )
@@ -143,6 +169,47 @@ async def upload_photo(
         db.add(new_photo)
         db.commit()
         db.refresh(new_photo)
+
+        # 2. Запускаем обработку в Celery без ожидания результата
+        task = process_image.delay(file_content, apartment_id)
+
+        # 3. Создаем фоновую задачу для обновления записи после обработки
+        async def update_photo_url():
+            try:
+                # Ждем завершения задачи Celery (с таймаутом)
+                cover_url = task.get(timeout=300)  # 5 минут таймаут
+
+                # Обновляем запись в БД
+                db_session = SessionLocal()
+                try:
+                    photo = db_session.query(ApartmentPhoto).filter(ApartmentPhoto.id == new_photo.id).first()
+                    if photo:
+                        photo.url = cover_url
+                        photo.photo_metadata.update({"processing_status": "completed"})
+                        db_session.commit()
+                finally:
+                    db_session.close()
+            except Exception as e:
+                # В случае ошибки обновляем статус в БД
+                logger.error(f"Error processing photo: {e}")
+                db_session = SessionLocal()
+                try:
+                    photo = db_session.query(ApartmentPhoto).filter(ApartmentPhoto.id == new_photo.id).first()
+                    if photo:
+                        photo.photo_metadata.update({
+                            "processing_status": "failed",
+                            "error": str(e)
+                        })
+                        db_session.commit()
+                finally:
+                    db_session.close()
+
+        # Запускаем фоновую задачу
+        if background_tasks:
+            background_tasks.add_task(update_photo_url)
+        else:
+            # Создаем новую задачу если BackgroundTasks не передан
+            asyncio.create_task(update_photo_url())
 
         # Логируем событие
         await log_event(
@@ -154,21 +221,26 @@ async def upload_photo(
             payload={
                 "apartment_id": apartment_id,
                 "filename": file.filename,
-                "sort_order": new_sort_order
+                "sort_order": new_sort_order,
+                "status": "processing"
             },
             request=request
         )
 
-        # Готовим ответ
+        # Готовим ответ с информацией о статусе обработки
         return PhotoUploadResponse(
             id=new_photo.id,
-            url=cover_url,
-            thumbnail_url=cover_url,  # В будущем здесь может быть URL миниатюры
+            url=temp_url,  # Временный URL, будет обновлен после обработки
+            thumbnail_url=temp_url,
             apartment_id=apartment_id,
             sort_order=new_sort_order,
-            is_cover=new_sort_order == 0
+            is_cover=new_sort_order == 0,
+            processing_status="pending"
         )
 
+    except HTTPException:
+        # Пробрасываем HTTPException дальше
+        raise
     except Exception as e:
         logger.error(f"Error uploading photo: {e}")
         raise HTTPException(

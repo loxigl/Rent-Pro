@@ -47,3 +47,4 @@ ujson==5.9.0
 python-multipart==0.0.9
 
 pydantic[email]
+tenacity
