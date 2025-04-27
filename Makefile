@@ -1,11 +1,16 @@
 # Makefile для проекта AvitoRentPro
 
-.PHONY: setup dev prod frontend test down-dev down-prod clean-dev clean-prod rebuild help logs-dev logs-prod
+.PHONY: setup dev prod frontend test down-dev down-prod clean-dev clean-prod rebuild help logs-dev logs-prod setup-ssl
 
 # Переменные
 DOCKER_COMPOSE_DEV = docker/docker-compose.dev.yml
 DOCKER_COMPOSE_PROD = docker/docker-compose.prod.yml
 DEPLOY_SCRIPT = scripts/deploy.sh
+SETUP_SSL_SCRIPT = scripts/setup-ssl.sh
+
+# Загрузка переменных из .env файла
+-include docker/.env
+export
 
 # Помощь
 help:
@@ -18,13 +23,14 @@ help:
 	@echo "    make logs-dev   - Просмотр логов разработки"
 	@echo "    make clean-dev  - Удаление всех контейнеров и данных разработки"
 	@echo "  • Продакшен:"
-	@echo "    make prod           - Деплой продакшен-окружения"
-	@echo "    make rebuild-prod   - Пересборка всех продакшен-контейнеров"
+	@echo "    make setup-ssl    - Настройка SSL для продакшен-окружения"
+	@echo "    make prod         - Деплой продакшен-окружения"
+	@echo "    make rebuild-prod - Пересборка всех продакшен-контейнеров"
 	@echo "    make rebuild-frontend - Пересборка только frontend в продакшене"
 	@echo "    make rebuild-backend  - Пересборка только backend в продакшене"
-	@echo "    make down-prod  - Остановка продакшен-контейнеров"
-	@echo "    make logs-prod  - Просмотр логов продакшена"
-	@echo "    make clean-prod - Удаление всех продакшен-контейнеров и данных"
+	@echo "    make down-prod    - Остановка продакшен-контейнеров"
+	@echo "    make logs-prod    - Просмотр логов продакшена"
+	@echo "    make clean-prod   - Удаление всех продакшен-контейнеров и данных"
 	@echo "  • Общие команды:"
 	@echo "    make test       - Запуск всех тестов"
 	@echo "    make rebuild    - Пересборка контейнеров разработки"
@@ -32,6 +38,10 @@ help:
 # Инициализация проекта
 setup:
 	@bash scripts/setup.sh
+
+# Настройка SSL для продакшена
+setup-ssl:
+	@bash $(SETUP_SSL_SCRIPT) $(DOMAIN) $(CERTBOT_EMAIL)
 
 # Деплой окружения разработки
 dev:
@@ -99,5 +109,6 @@ rebuild-backend:
 	docker-compose -f $(DOCKER_COMPOSE_PROD) build celery_worker
 	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps celery_worker
 	@echo "Backend в продакшн пересобран и запущен"
+
 # Значение по умолчанию
 default: help
