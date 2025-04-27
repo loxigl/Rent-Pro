@@ -18,7 +18,10 @@ help:
 	@echo "    make logs-dev   - Просмотр логов разработки"
 	@echo "    make clean-dev  - Удаление всех контейнеров и данных разработки"
 	@echo "  • Продакшен:"
-	@echo "    make prod       - Деплой продакшен-окружения"
+	@echo "    make prod           - Деплой продакшен-окружения"
+	@echo "    make rebuild-prod   - Пересборка всех продакшен-контейнеров"
+	@echo "    make rebuild-frontend - Пересборка только frontend в продакшене"
+	@echo "    make rebuild-backend  - Пересборка только backend в продакшене"
 	@echo "    make down-prod  - Остановка продакшен-контейнеров"
 	@echo "    make logs-prod  - Просмотр логов продакшена"
 	@echo "    make clean-prod - Удаление всех продакшен-контейнеров и данных"
@@ -77,5 +80,24 @@ rebuild:
 	docker-compose -f $(DOCKER_COMPOSE_DEV) build
 	@echo "Контейнеры пересобраны"
 
+# Пересборка всех продакшн-контейнеров
+rebuild-prod:
+	docker-compose -f $(DOCKER_COMPOSE_PROD) build
+	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps
+	@echo "Все продакшн-контейнеры пересобраны и запущены"
+
+# Пересборка только frontend в продакшн
+rebuild-frontend:
+	docker-compose -f $(DOCKER_COMPOSE_PROD) build frontend
+	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps frontend
+	@echo "Frontend в продакшн пересобран и запущен"
+
+# Пересборка только backend в продакшн
+rebuild-backend:
+	docker-compose -f $(DOCKER_COMPOSE_PROD) build backend
+	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps backend
+	docker-compose -f $(DOCKER_COMPOSE_PROD) build celery_worker
+	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps celery_worker
+	@echo "Backend в продакшн пересобран и запущен"
 # Значение по умолчанию
 default: help

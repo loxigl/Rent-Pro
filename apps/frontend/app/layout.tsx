@@ -89,9 +89,7 @@ export default function RootLayout({
                     <div className="mt-6 md:mt-0">
                         <h3 className="text-lg font-semibold mb-4">Контакты</h3>
                         <ul className="space-y-2 text-secondary-300">
-                            <li>Телефон: +7 (999) 123-45-67</li>
-                            <li>Email: info@avitorentpro.ru</li>
-                            <li>Адрес: г. Невинномысск, ул. Ленина, 1</li>
+                            <li>Телефон: +7 (928) 320-90-83</li>
                         </ul>
                     </div>
                 </div>

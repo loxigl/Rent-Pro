@@ -10,7 +10,7 @@ interface ContactButtonsProps {
  * Компонент кнопок для связи с арендодателем
  */
 export default function ContactButtons({
-  phone = "+79991234567",  // По умолчанию используем тестовый телефон
+  phone = "+79283209083",  // По умолчанию используем тестовый телефон
   telegram = "avitorentpro" // По умолчанию используем тестовый аккаунт Telegram
 }: ContactButtonsProps) {
   return (
