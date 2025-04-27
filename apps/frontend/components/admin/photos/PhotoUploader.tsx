@@ -4,6 +4,8 @@ import {useState, useRef} from 'react';
 import {Button} from '@/components/ui/Button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // Интерфейс для загруженной фотографии
 interface UploadedPhoto {
     id: number;
@@ -110,7 +112,7 @@ export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploa
                 formData.append('apartment_id', apartmentId.toString());
 
                 // Выполняем запрос
-                const response = await fetch('/admin/api/v1/photos/' + apartmentId + '/upload', {
+                const response = await fetch(`${API_URL}/admin/api/v1/photos/` + apartmentId + '/upload', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`

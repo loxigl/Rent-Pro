@@ -24,7 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger("api")
 
 # Создание FastAPI приложения
-app = FastAPI(
+app = FastAPI()
+app1 = FastAPI(
     title="AvitoRentPro API",
     description="API для сервиса аренды квартир AvitoRentPro",
     version="0.2.0",
@@ -37,7 +38,7 @@ origins = [
     "https://kvartiry26.ru",  # Frontend prod
 ]
 
-app.add_middleware(
+app1.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
@@ -47,7 +48,7 @@ app.add_middleware(
 
 
 # Middleware для логирования запросов
-@app.middleware("http")
+@app1.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
 
@@ -63,7 +64,7 @@ async def log_requests(request: Request, call_next):
 
 
 # Обработчик для 404 ошибки
-@app.exception_handler(404)
+@app1.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc):
     return JSONResponse(
         status_code=404,
@@ -74,22 +75,22 @@ async def not_found_exception_handler(request: Request, exc):
 # Подключение публичных API-роутеров
 from src.api.apartments import router as apartments_router
 
-app.include_router(apartments_router, prefix=settings.API_PREFIX)
+app1.include_router(apartments_router, prefix=settings.API_PREFIX)
 
 # Подключение API-роутеров для админ-панели
 from src.api.admin import admin_router
 
-app.include_router(admin_router)
+app1.include_router(admin_router)
 
 
 # Корневой эндпоинт
-@app.get("/")
+@app1.get("/")
 async def root():
     return {"message": "AvitoRentPro API v0.2.0"}
 
 
 # Инициализация при запуске приложения
-@app.on_event("startup")
+@app1.on_event("startup")
 async def startup_event():
     # Создаем таблицы в базе данных (если их еще нет)
     Base.metadata.create_all(bind=engine)
@@ -104,6 +105,8 @@ async def startup_event():
     finally:
         db.close()
 
+
+app.mount('/api', app1)
 
 # Точка входа для запуска через uvicorn
 if __name__ == "__main__":

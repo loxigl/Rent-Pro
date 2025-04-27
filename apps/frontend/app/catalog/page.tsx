@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 // Таймаут для Incremental Static Regeneration (ISR)
-export const revalidate = 0;
+export const revalidate = 10;
 
 // Интерфейс для параметров страницы (query-параметры)
 interface CatalogPageProps {

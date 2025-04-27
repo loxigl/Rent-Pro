@@ -103,7 +103,7 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             };
 
             // Выполняем запрос
-            const response = await fetch('${API_URL}/admin/api/v1/photos/bulk-update', {
+            const response = await fetch(`${API_URL}/admin/api/v1/photos/bulk-update`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

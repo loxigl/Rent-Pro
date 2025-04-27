@@ -32,9 +32,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Копируем код приложения
 WORKDIR /app
 COPY . .
-FROM runtime AS debug
-RUN echo "==== В образ попало ====" && \
-    find /app | sed -e 's/^/📄 /' | head -n 100
 
 # Установка CMD для запуска приложения
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -44,13 +44,7 @@ export interface GetApartmentsParams {
     order?: 'asc' | 'desc';
 }
 
-/**
- * Правильное определение API URL для серверного и клиентского окружения
- */
-const API_URL =
-    typeof window !== "undefined"
-        ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/v1"
-        : "http://backend:8000/api/v1"; // для server-side
+const API_URL = process.env.NEXT_PUBLIC_API_URL + '/api/v1' || 'http://localhost:8000' + '/api/v1';
 
 /**
  * Получение списка квартир с пагинацией и сортировкой

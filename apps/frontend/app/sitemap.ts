@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         // Получаем все доступные квартиры только если API доступен
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL + '/api/v1' || 'http://localhost:8000/api/v1'
         const response = await fetch(`${apiUrl}/apartments?page_size=40`, {
             cache: 'no-store',
             next: {revalidate: 0}
@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         return [...staticPages, ...apartmentPages]
     } catch (error) {
-        console.warn('Ошибка при получении данных для sitemap:', error)
+        console.warn(baseUrl, '  Ошибка при получении данных для sitemap:', error)
 
         // Возвращаем только статические страницы в случае ошибки
         return [
