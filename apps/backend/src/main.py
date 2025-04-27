@@ -11,6 +11,9 @@ import sys
 sys.path.append(path.dirname(path.abspath(__file__)))
 
 from src.config.settings import settings
+from src.db.database import engine, Base
+from src.models.auth import initialize_permissions
+from src.db.database import SessionLocal
 
 # Настройка логгера
 logging.basicConfig(
@@ -24,13 +27,20 @@ logger = logging.getLogger("api")
 app = FastAPI(
     title="AvitoRentPro API",
     description="API для сервиса аренды квартир AvitoRentPro",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 # Настройка CORS
+origins = [
+    "http://localhost:3000",  # Frontend dev
+    "http://localhost:8000",  # Backend dev
+    "https://rent.example.ru",  # Frontend prod
+    "https://admin.rent.example.ru",  # Admin panel prod
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Для продакшена заменить на конкретные домены
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,17 +72,38 @@ async def not_found_exception_handler(request: Request, exc):
     )
 
 
-# Подключение роутеров из других модулей
+# Подключение публичных API-роутеров
 from src.api.apartments import router as apartments_router
 
-# Регистрация роутеров
 app.include_router(apartments_router, prefix=settings.API_PREFIX)
+
+# Подключение API-роутеров для админ-панели
+from src.api.admin import admin_router
+
+app.include_router(admin_router)
 
 
 # Корневой эндпоинт
 @app.get("/")
 async def root():
-    return {"message": "AvitoRentPro API v0.1.0"}
+    return {"message": "AvitoRentPro API v0.2.0"}
+
+
+# Инициализация при запуске приложения
+@app.on_event("startup")
+async def startup_event():
+    # Создаем таблицы в базе данных (если их еще нет)
+    Base.metadata.create_all(bind=engine)
+
+    # Инициализируем разрешения для ролей
+    db = SessionLocal()
+    try:
+        initialize_permissions(db)
+        logger.info("Permissions initialized")
+    except Exception as e:
+        logger.error(f"Error initializing permissions: {e}")
+    finally:
+        db.close()
 
 
 # Точка входа для запуска через uvicorn
