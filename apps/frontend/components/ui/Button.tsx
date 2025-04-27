@@ -9,7 +9,7 @@ interface BaseButtonProps {
     size?: ButtonSize;
     fullWidth?: boolean;
     className?: string;
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 type ButtonProps<C extends ElementType = "button"> = {

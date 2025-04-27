@@ -12,7 +12,6 @@ function log() {
   echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
 }
 
-# Функция для проверки ошибок
 function check_error() {
   if [ $? -ne 0 ]; then
     echo -e "${RED}❌ $1${NC}"
@@ -20,28 +19,22 @@ function check_error() {
   fi
 }
 
-# Получаем корневую директорию проекта
 ROOT_DIR=$(pwd)
-
-# Определяем режим деплоя
 MODE=${1:-dev}
 ENV_FILE="$ROOT_DIR/docker/.env"
 
 log "🚀 Начинаем деплой в режиме: $MODE"
 
-# Проверяем наличие docker
 if ! command -v docker &> /dev/null; then
   echo -e "${RED}❌ Docker не установлен${NC}"
   exit 1
 fi
 
-# Проверяем наличие docker-compose
 if ! command -v docker-compose &> /dev/null; then
   echo -e "${RED}❌ Docker Compose не установлен${NC}"
   exit 1
 fi
 
-# Проверяем наличие ENV файла
 if [ ! -f "$ENV_FILE" ]; then
   log "📄 Файл .env не найден, копируем из .env.sample"
   cp "$ROOT_DIR/docker/.env.sample" "$ENV_FILE"
@@ -49,58 +42,39 @@ if [ ! -f "$ENV_FILE" ]; then
   log "✅ Файл .env создан"
 fi
 
-# Настройка конфигурации в зависимости от режима
 if [ "$MODE" == "prod" ]; then
   COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.prod.yml"
 
-  # Проверяем настройку SSL для продакшена
-  if grep -q "DOMAIN=rent.example.ru" "$ENV_FILE"; then
-    log "⚠️ В .env файле не настроен домен. Пожалуйста, обновите DOMAIN и CERTBOT_EMAIL"
+  DOMAIN=$(grep DOMAIN "$ENV_FILE" | cut -d '=' -f2 | tr -d '\r')
+  EMAIL=$(grep CERTBOT_EMAIL "$ENV_FILE" | cut -d '=' -f2 | tr -d '\r')
+
+  if [[ "$DOMAIN" == "rent.example.ru" || -z "$DOMAIN" ]]; then
+    log "⚠️ В .env файле не настроен домен! Пожалуйста, обновите DOMAIN и CERTBOT_EMAIL"
+    exit 1
   fi
-
-  # Создаем файлы для certbot если они отсутствуют
-  mkdir -p "$ROOT_DIR/docker/certbot/conf"
-  mkdir -p "$ROOT_DIR/docker/certbot/www"
-
-  # Запускаем nginx и certbot для получения SSL сертификатов
-  log "🔒 Получаем SSL сертификаты..."
-  DOMAIN=$(grep DOMAIN "$ENV_FILE" | cut -d '=' -f2)
-  EMAIL=$(grep CERTBOT_EMAIL "$ENV_FILE" | cut -d '=' -f2)
-
-  # Проверяем наличие сертификатов
-  if [ ! -d "$ROOT_DIR/docker/certbot/conf/live/$DOMAIN" ]; then
-    log "🔄 Сертификаты не найдены, инициализируем certbot..."
-    docker-compose -f "$COMPOSE_FILE" up -d nginx
-    docker-compose -f "$COMPOSE_FILE" run --rm certbot certonly --webroot --webroot-path=/var/www/certbot \
-      --email "$EMAIL" --agree-tos --no-eff-email -d "$DOMAIN" --force-renewal
-    check_error "Не удалось получить SSL сертификаты"
-
-    # Перезапускаем nginx для применения сертификатов
-    docker-compose -f "$COMPOSE_FILE" restart nginx
+   # Проверка наличия SSL сертификатов
+  if [ ! -f "$ROOT_DIR/docker/certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
+    echo -e "${RED}❌ SSL сертификаты не найдены для домена $DOMAIN${NC}"
+    echo -e "${RED}⚡ Пожалуйста, получите их вручную перед деплоем!${NC}"
+    exit 1
   fi
+  # Запуск базовых сервисов
+  log "🚀 Запускаем сервисы для продакшена"
+  docker-compose -f "$COMPOSE_FILE" up -d
+  check_error "Не удалось запустить базовые сервисы"
 else
   COMPOSE_FILE="$ROOT_DIR/docker/docker-compose.dev.yml"
+  log "🐳 Запускаем все контейнеры в режиме $MODE"
+  docker-compose -f "$COMPOSE_FILE" up -d
+  check_error "Не удалось запустить контейнеры"
 fi
 
-# Запускаем docker-compose
-log "🐳 Запускаем контейнеры в режиме: $MODE"
-docker-compose -f "$COMPOSE_FILE" up -d
-check_error "Не удалось запустить контейнеры"
-
-# Даем контейнерам время на запуск
-log "⏳ Ожидаем запуск контейнеров..."
-sleep 10
-
-# Запускаем миграции
+# Миграции базы данных
 log "🗃️ Применяем миграции базы данных"
-if [ "$MODE" == "prod" ]; then
-  docker-compose -f "$COMPOSE_FILE" exec -T backend alembic upgrade head
-else
-  docker-compose -f "$COMPOSE_FILE" exec -T backend alembic upgrade head
-fi
+docker-compose -f "$COMPOSE_FILE" exec -T backend alembic -c alembic.ini upgrade head
 check_error "Не удалось применить миграции"
 
-# Проверяем наличие данных в БД (только для dev)
+# Для dev режима наполнение тестовыми данными
 if [ "$MODE" == "dev" ]; then
   log "🧪 Проверяем наличие тестовых данных"
   APARTMENT_COUNT=$(docker-compose -f "$COMPOSE_FILE" exec -T db psql -U postgres -d avitorentpro -c "SELECT COUNT(*) FROM apartment;" -t 2>/dev/null || echo "0")
@@ -117,10 +91,10 @@ fi
 
 # Инициализация MinIO
 log "📦 Инициализация MinIO"
-MINIO_BUCKET=$(grep MINIO_BUCKET "$ENV_FILE" | cut -d '=' -f2)
-INIT_MINIO=$(docker-compose -f "$COMPOSE_FILE" exec -T minio mkdir -p /data/$MINIO_BUCKET 2>/dev/null || echo "already exists")
+MINIO_BUCKET=$(grep MINIO_BUCKET "$ENV_FILE" | cut -d '=' -f2 | tr -d '\r')
+docker-compose -f "$COMPOSE_FILE" exec -T minio mkdir -p /data/$MINIO_BUCKET 2>/dev/null || echo "already exists"
 
-# Выводим информацию о развернутом окружении
+# Завершающий лог
 echo -e "${GREEN}=================================================${NC}"
 echo -e "${GREEN}✅ Деплой успешно завершен в режиме: $MODE${NC}"
 echo -e "${GREEN}=================================================${NC}"

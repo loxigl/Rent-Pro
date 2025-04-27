@@ -1,24 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    domains: ['localhost', 'minio', process.env.NEXT_PUBLIC_MINIO_HOST || 'localhost', 'placehold.co'],
-    formats: ['image/webp'],
-  },
-  experimental: {
-    // Включаем Server Components
-    serverComponents: true,
-    // Включаем ISR для страницы каталога
-    isrMemoryCacheSize: 0,
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
-      },
-    ];
-  },
-};
+    output: 'standalone',
+    experimental: {
+        serverActions: true,
+    },
+    images: {
+        domains: ['localhost', 'minio', process.env.NEXT_PUBLIC_MINIO_HOST || ''],
+        remotePatterns: [
+            {
+                protocol: 'http',
+                hostname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: '**',
+            },
+        ],
+    },
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

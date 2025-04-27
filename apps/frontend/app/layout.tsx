@@ -2,7 +2,6 @@ import type {Metadata} from "next";
 import {Inter} from "next/font/google";
 import "@/styles/globals.css";
 import Link from "next/link";
-
 // Настройка шрифта Inter
 const inter = Inter({
     subsets: ["latin", "cyrillic"],
@@ -16,6 +15,7 @@ export const metadata: Metadata = {
         default: "AvitoRentPro - Аренда квартир в Невинномысске",
         template: "%s | AvitoRentPro",
     },
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
     description: "Сервис аренды квартир в Невинномысске. Удобный поиск, актуальные предложения, быстрое бронирование.",
     keywords: ["аренда", "квартиры", "Невинномысск", "посуточно", "жилье"],
     authors: [{name: "AvitoRentPro Team"}],
@@ -42,6 +42,7 @@ export const metadata: Metadata = {
         ],
     },
 };
+
 
 export default function RootLayout({
                                        children,

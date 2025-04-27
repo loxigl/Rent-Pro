@@ -34,8 +34,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",  # Frontend dev
     "http://localhost:8000",  # Backend dev
-    "https://rent.example.ru",  # Frontend prod
-    "https://admin.rent.example.ru",  # Admin panel prod
+    "https://kvartiry26.ru",  # Frontend prod
 ]
 
 app.add_middleware(
