@@ -61,7 +61,7 @@ if [ "$MODE" == "prod" ]; then
 
   # Проверка настройки домена
   DOMAIN=${DOMAIN:-"example.com"}
-  if [[ "$DOMAIN" == "example.com" || "$DOMAIN" == "kvartiry26.ru" || -z "$DOMAIN" ]]; then
+  if [[ "$DOMAIN" == "example.com" || -z "$DOMAIN" ]]; then
     error "⚠️ В .env файле не настроен домен! Пожалуйста, обновите DOMAIN и CERTBOT_EMAIL"
     exit 1
   fi
