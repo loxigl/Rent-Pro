@@ -44,7 +44,13 @@ export interface GetApartmentsParams {
     order?: 'asc' | 'desc';
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+/**
+ * Правильное определение API URL для серверного и клиентского окружения
+ */
+const API_URL =
+    typeof window !== "undefined"
+        ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/v1"
+        : "http://backend:8000/api/v1"; // для server-side
 
 /**
  * Получение списка квартир с пагинацией и сортировкой
@@ -67,7 +73,7 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
     const response = await fetch(`${API_URL}/apartments?${searchParams.toString()}`);
 
     if (!response.ok) {
-        throw new Error(`Failed to fetch apartments: ${response.status}`);
+        throw new Error(`Failed to fetch apartments: ${response.status}, url: ${response.url}`);
     }
 
     return response.json();
@@ -80,7 +86,7 @@ export async function getApartmentById(id: number): Promise<ApartmentDetail> {
     const response = await fetch(`${API_URL}/apartments/${id}`);
 
     if (!response.ok) {
-        throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}`);
+        throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}, url: ${response.url}`);
     }
 
     return response.json();
@@ -103,7 +109,7 @@ export async function uploadApartmentPhoto(
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to upload photo: ${response.status}`);
+        throw new Error(`Failed to upload photo: ${response.status}, url: ${response.url}`);
     }
 
     return response.json();

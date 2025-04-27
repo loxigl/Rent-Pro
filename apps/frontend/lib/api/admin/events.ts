@@ -3,7 +3,7 @@
  */
 
 import {getAccessToken} from '@/lib/utils/admin/jwt';
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Типы событий
 export type EventType =
     | 'user_login'
@@ -58,7 +58,7 @@ export async function getEvents(params: GetEventsParams = {}): Promise<EventLogR
         const token = await getAccessToken();
 
         // Формируем URL с параметрами
-        const url = new URL('/admin/api/v1/events', window.location.origin);
+        const url = new URL(`${API_URL}/admin/api/v1/events`);
 
         // Добавляем параметры запроса
         if (params.page) url.searchParams.append('page', params.page.toString());
@@ -94,7 +94,7 @@ export async function getEventById(eventId: string): Promise<EventLogItem> {
         const token = await getAccessToken();
 
         // Выполняем запрос
-        const response = await fetch(`/admin/api/v1/events/${eventId}`, {
+        const response = await fetch(`${API_URL}/admin/api/v1/events/${eventId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -121,7 +121,7 @@ export async function getEventStats(
         const token = await getAccessToken();
 
         // Формируем URL с параметрами
-        const url = new URL('/admin/api/v1/events/stats/summary', window.location.origin);
+        const url = new URL(`${API_URL}/admin/api/v1/events/stats/summary`);
 
         // Добавляем параметры запроса
         if (startDate) url.searchParams.append('start_date', startDate);

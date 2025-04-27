@@ -5,6 +5,8 @@ import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/Button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // Определение интерфейса для данных квартиры
 interface ApartmentFormData {
     title: string;
@@ -61,7 +63,7 @@ export default function ApartmentForm({apartmentId, onSuccess}: ApartmentFormPro
                     const token = await getAccessToken();
 
                     // Выполняем запрос
-                    const response = await fetch(`/admin/api/v1/apartments/${apartmentId}`, {
+                    const response = await fetch(`${API_URL}/admin/api/v1/apartments/${apartmentId}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -196,8 +198,8 @@ export default function ApartmentForm({apartmentId, onSuccess}: ApartmentFormPro
 
             // Настраиваем URL и метод в зависимости от режима (создание/редактирование)
             const url = apartmentId
-                ? `/admin/api/v1/apartments/${apartmentId}`
-                : '/admin/api/v1/apartments';
+                ? `${API_URL}/admin/api/v1/apartments/${apartmentId}`
+                : `${API_URL}/admin/api/v1/apartments`;
 
             const method = apartmentId ? 'PATCH' : 'POST';
 

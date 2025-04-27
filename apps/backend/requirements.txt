@@ -31,8 +31,6 @@ flake8==7.0.0
 isort==5.12.0
 mypy==1.5.1
 
-python-multipart
-
 # Аутентификация и безопасность
 PyJWT==2.8.0
 bcrypt==4.1.2
@@ -46,5 +44,6 @@ loguru==0.7.2
 # Ускорение работы с JSON
 ujson==5.9.0
 
-# Исправить версию
 python-multipart==0.0.9
+
+pydantic[email]

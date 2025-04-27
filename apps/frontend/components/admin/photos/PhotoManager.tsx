@@ -27,6 +27,8 @@ interface PhotoManagerProps {
     apartmentId: number;
 }
 
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function PhotoManager({apartmentId}: PhotoManagerProps) {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             const token = await getAccessToken();
 
             // Выполняем запрос
-            const response = await fetch(`/admin/api/v1/photos/${apartmentId}`, {
+            const response = await fetch(`${API_URL}/admin/api/v1/photos/${apartmentId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -101,7 +103,7 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             };
 
             // Выполняем запрос
-            const response = await fetch('/admin/api/v1/photos/bulk-update', {
+            const response = await fetch('${API_URL}/admin/api/v1/photos/bulk-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -136,7 +138,7 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             const token = await getAccessToken();
 
             // Выполняем запрос
-            const response = await fetch(`/admin/api/v1/photos/${photoId}`, {
+            const response = await fetch(`${API_URL}/admin/api/v1/photos/${photoId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -177,7 +179,7 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             const token = await getAccessToken();
 
             // Выполняем запрос
-            const response = await fetch(`/admin/api/v1/photos/${photoId}`, {
+            const response = await fetch(`${API_URL}/admin/api/v1/photos/${photoId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

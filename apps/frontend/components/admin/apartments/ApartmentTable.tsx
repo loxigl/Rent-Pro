@@ -6,6 +6,8 @@ import Image from 'next/image';
 import {Button} from '@/components/ui/Button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // Интерфейс для квартиры в списке
 interface ApartmentItem {
     id: number;
@@ -50,7 +52,7 @@ export default function ApartmentTable({onApartmentDelete}: ApartmentTableProps)
                 const token = await getAccessToken();
 
                 // Формируем URL с параметрами
-                const url = new URL('/admin/api/v1/apartments', window.location.origin);
+                const url = new URL(`${API_URL}/admin/api/v1/apartments`, window.location.origin);
                 url.searchParams.append('page', page.toString());
                 url.searchParams.append('page_size', '10');
 
@@ -110,7 +112,7 @@ export default function ApartmentTable({onApartmentDelete}: ApartmentTableProps)
             const token = await getAccessToken();
 
             // Выполняем запрос на удаление
-            const response = await fetch(`/admin/api/v1/apartments/${id}`, {
+            const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

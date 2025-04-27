@@ -4,6 +4,8 @@
 
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // Интерфейс для создания квартиры
 export interface ApartmentCreate {
     title: string;
@@ -84,7 +86,7 @@ export async function getAdminApartments(params: GetApartmentsParams = {}): Prom
         const token = await getAccessToken();
 
         // Формируем URL с параметрами
-        const url = new URL('/admin/api/v1/apartments', window.location.origin);
+        const url = new URL(`${API_URL}/admin/api/v1/apartments`);
 
         // Добавляем параметры запроса
         if (params.search) url.searchParams.append('search', params.search);
@@ -121,7 +123,7 @@ export async function getAdminApartmentById(id: number): Promise<ApartmentDetail
         const token = await getAccessToken();
 
         // Выполняем запрос
-        const response = await fetch(`/admin/api/v1/apartments/${id}`, {
+        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -147,7 +149,7 @@ export async function createApartment(apartmentData: ApartmentCreate): Promise<A
         const token = await getAccessToken();
 
         // Выполняем запрос
-        const response = await fetch('/admin/api/v1/apartments', {
+        const response = await fetch(`${API_URL}/admin/api/v1/apartments`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -179,7 +181,7 @@ export async function updateApartment(id: number, apartmentData: ApartmentUpdate
         const token = await getAccessToken();
 
         // Выполняем запрос
-        const response = await fetch(`/admin/api/v1/apartments/${id}`, {
+        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -211,7 +213,7 @@ export async function deleteApartment(id: number): Promise<void> {
         const token = await getAccessToken();
 
         // Выполняем запрос
-        const response = await fetch(`/admin/api/v1/apartments/${id}`, {
+        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`

@@ -4,6 +4,8 @@ import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/Button';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface LoginFormProps {
     onSuccess?: () => void;
 }
@@ -22,7 +24,7 @@ const LoginForm = ({onSuccess}: LoginFormProps) => {
 
         try {
             // Выполняем запрос на аутентификацию
-            const response = await fetch('/admin/api/v1/auth/login', {
+            const response = await fetch(`${API_URL}/admin/api/v1/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
