@@ -11,7 +11,7 @@ interface ContactButtonsProps {
  */
 export default function ContactButtons({
   phone = "+79283209083",  // По умолчанию используем тестовый телефон
-  telegram = "Kvartiry26" // По умолчанию используем тестовый аккаунт Telegram
+  telegram = "Kvartiry26_bot" // По умолчанию используем тестовый аккаунт Telegram
 }: ContactButtonsProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 my-6">

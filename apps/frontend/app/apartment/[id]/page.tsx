@@ -129,7 +129,7 @@ export default async function ApartmentDetailPage({
 
                         <ContactButtons
                             phone="+79991234567"
-                            telegram="Kvartiry26"
+                            telegram="Kvartiry26_bot"
                         />
                     </div>
 
