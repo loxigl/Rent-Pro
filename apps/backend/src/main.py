@@ -90,7 +90,7 @@ async def root():
 
 
 # Инициализация при запуске приложения
-@app1.on_event("startup")
+@app.on_event("startup")
 async def startup_event():
     # Создаем таблицы в базе данных (если их еще нет)
     Base.metadata.create_all(bind=engine)
