@@ -15,6 +15,8 @@ interface Photo {
     sort_order: number;
     is_cover: boolean;
     created_at: string;
+    processing_status?: "pending" | "completed" | "failed";
+    local_preview?: string;
 }
 
 // Интерфейс для ответа API с фотографиями
@@ -57,7 +59,24 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
             }
 
             const data: PhotoListResponse = await response.json();
-            setPhotos(data.items);
+            const mapped: Photo[] = data.items.map(p => ({
+                ...p,
+                processing_status:
+                // берём из метаданных, либо считаем завершённым
+                    ((p as any).photo_metadata?.processing_status as
+                        | "pending"
+                        | "completed"
+                        | "failed") ?? "completed",
+            }));
+
+            setPhotos(prev =>
+                mapped.map(p => {
+                    const old = prev.find(o => o.id === p.id);
+                    return p.processing_status === "completed"
+                        ? p                           // готово → превью больше не нужно
+                        : {...p, local_preview: old?.local_preview};
+                }),
+            );
         } catch (err: any) {
             setError(err.message || 'Произошла ошибка при загрузке фотографий');
             console.error('Ошибка при загрузке фотографий:', err);
@@ -73,17 +92,26 @@ export default function PhotoManager({apartmentId}: PhotoManagerProps) {
         }
     }, [apartmentId]);
 
-    // Обработчик успешной загрузки фотографии
-    const handlePhotoUploaded = (photo: Photo) => {
+    useEffect(() => {
+        const hasPending = photos.some(p => p.processing_status === "pending");
+        if (!hasPending) return;
+
+        const id = setInterval(fetchPhotos, 3000);   // опрашиваем каждые 3 с
+        return () => clearInterval(id);
+    }, [photos]);   // ← перезапуск, когда список меняется
+
+
+    const handlePhotoUploaded = (photo: Photo & { local_preview: string }) => {
         setUploadSuccess(true);
+        setTimeout(() => setUploadSuccess(false), 3000);
 
-        // Скрываем сообщение об успехе через 3 секунды
-        setTimeout(() => {
-            setUploadSuccess(false);
-        }, 3000);
-
-        // Обновляем список фотографий
-        setPhotos([...photos, photo]);
+        setPhotos(prev => [
+            ...prev,
+            {
+                ...photo,
+                processing_status: "pending",
+            },
+        ]);
     };
 
     // Обработчик изменения порядка фотографий

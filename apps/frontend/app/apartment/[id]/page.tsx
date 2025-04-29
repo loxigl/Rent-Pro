@@ -8,7 +8,7 @@ import ContactButtons from "@/components/apartments/ContactButtons";
 import {Markdown} from "@/components/ui/Markdown";
 import {formatPrice} from "@/lib/utils/format";
 import {Suspense} from "react";
-
+export const revalidate=100; // Период обновления кеша (в секундах) для динамических страниц
 export const dynamic = 'force-dynamic';
 
 // Генерация метаданных для страницы

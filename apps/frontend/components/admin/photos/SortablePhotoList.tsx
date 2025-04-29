@@ -1,5 +1,5 @@
 "use client";
-
+import {cn} from "@/lib/utils/cn";
 import {useState, useEffect} from 'react';
 import Image from 'next/image';
 import {Button} from '@/components/ui/Button';
@@ -13,6 +13,9 @@ interface Photo {
     sort_order: number;
     is_cover: boolean;
     created_at: string;
+    processing_status?: "pending" | "completed" | "failed";
+    local_preview?: string;
+
 }
 
 interface SortablePhotoListProps {
@@ -22,6 +25,7 @@ interface SortablePhotoListProps {
     onDeletePhoto?: (photoId: number) => void;
     isSaving?: boolean;
 }
+
 
 export default function SortablePhotoList({
                                               photos,
@@ -107,6 +111,14 @@ export default function SortablePhotoList({
         });
     };
 
+    function photoSrc(p: Photo): string {
+        // local_preview есть ТОЛЬКО пока статус pending
+        if (p.processing_status === "pending") {
+            return p.local_preview || ''; // Добавляем проверку на undefined
+        }
+        return p.thumbnail_url || p.url || ''; // Гарантируем возврат строки
+    }
+
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
@@ -123,6 +135,7 @@ export default function SortablePhotoList({
                 )}
             </div>
 
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {items.map(photo => (
                     <div
@@ -135,24 +148,65 @@ export default function SortablePhotoList({
                         onDrop={e => handleDrop(e, photo)}
                     >
                         <div className="relative aspect-square">
-                            <Image
-                                src={photo.thumbnail_url || photo.url}
-                                alt={`Фото ${photo.id}`}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            />
+                            {/* если pending — <img>, иначе Next <Image> */}
+                            {photo.processing_status === "pending" ? (
+                                <img
+                                    src={photoSrc(photo)}
+                                    alt={`Фото ${photo.id}`}
+                                    className="w-full h-full object-cover opacity-50 blur-sm
+                 transition-opacity duration-300"
+                                />
+                            ) : (
+                                <Image
+                                    src={photoSrc(photo)}
+                                    alt={`Фото ${photo.id}`}
+                                    fill
+                                    sizes="(max-width: 640px) 100vw,
+             (max-width: 768px) 50vw,
+             (max-width: 1024px) 33vw,
+             25vw"
+                                    className="object-cover transition-opacity duration-300"
+                                    // если используете Next ≤13, добавьте unoptimized для внешних URL
+                                    // unoptimized
+                                />
+                            )}
+
+                            {/* крутилка поверх pending-фото */}
+                            {photo.processing_status === "pending" && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <svg
+                                        className="h-6 w-6 animate-spin text-white drop-shadow"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"
+                                        />
+                                    </svg>
+                                </div>
+                            )}
 
                             {/* Порядковый номер */}
                             <div
-                                className="absolute top-2 left-2 bg-black bg-opacity-50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                                className="absolute top-2 left-2 bg-black/50 text-white rounded-full
+               w-6 h-6 flex items-center justify-center text-xs"
+                            >
                                 {photo.sort_order + 1}
                             </div>
 
                             {/* Индикатор обложки */}
                             {photo.is_cover && (
-                                <div
-                                    className="absolute top-2 right-2 bg-primary-600 text-white text-xs px-2 py-1 rounded-md">
+                                <div className="absolute top-2 right-2 bg-primary-600 text-white
+                    text-xs px-2 py-1 rounded-md">
                                     Обложка
                                 </div>
                             )}

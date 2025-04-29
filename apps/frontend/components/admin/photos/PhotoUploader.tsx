@@ -19,7 +19,17 @@ interface UploadedPhoto {
 
 interface PhotoUploaderProps {
     apartmentId: number;
-    onPhotoUploaded?: (photo: UploadedPhoto) => void;
+    onPhotoUploaded?: (photo: {
+        id: number;
+        url: string;
+        thumbnail_url?: string;
+        apartment_id: number;
+        sort_order: number;
+        is_cover: boolean;
+        created_at: string;
+        processing_status?: "pending" | "completed" | "failed";
+        local_preview: string
+    }) => void;
 }
 
 export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploaderProps) {
@@ -128,9 +138,11 @@ export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploa
                 const data: UploadedPhoto = await response.json();
 
                 // Вызываем колбэк для обновления списка фотографий
-                if (onPhotoUploaded) {
-                    onPhotoUploaded(data);
-                }
+                onPhotoUploaded?.({
+                    ...data,
+                    processing_status: "pending" as const,
+                    local_preview: previewUrls[i]          // <<< добавили
+                });
             }
 
             // Устанавливаем прогресс в 100%
