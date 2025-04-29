@@ -15,24 +15,23 @@ logger = logging.getLogger(__name__)
 
 ALL_QUEUES: dict[str, Queue] = {
     # тяжёлые CPU-bound задачи обработки картинок
-    "images":  Queue("images",  routing_key="images"),
+    "images": Queue("images", routing_key="images"),
     # отправка email / push-ов
     "notifications": Queue("notifications", routing_key="notifications"),
     # генерация отчётов, экспортов, cron-подобные задачи
     "reports": Queue("reports", routing_key="reports"),
 }
 
-celery_app.conf.update(
-    task_default_queue="default",                # пусть «обычные» таски идут в default
-    task_queues=tuple(ALL_QUEUES.values()),
-)
 # Настройка Celery
 celery_app = Celery(
     'avitorentpro',
     broker=f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/0',
     backend=f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/0',
 )
-
+celery_app.conf.update(
+    task_default_queue="default",  # пусть «обычные» таски идут в default
+    task_queues=tuple(ALL_QUEUES.values()),
+)
 # Настройка задач
 celery_app.conf.task_routes = {
     'process_image': {'queue': 'images'},
