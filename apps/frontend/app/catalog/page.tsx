@@ -4,6 +4,7 @@ import {getApartments} from "@/lib/api/apartments";
 import ApartmentCard, {ApartmentCardSkeleton} from "@/components/apartments/ApartmentCard";
 import {Button} from "@/components/ui/Button";
 import {Suspense} from "react";
+export const dynamic = 'force-dynamic';
 
 // Метаданные для страницы каталога
 export const metadata: Metadata = {

@@ -1,6 +1,6 @@
 # Makefile для проекта AvitoRentPro
 
-.PHONY: setup dev prod frontend test down-dev down-prod clean-dev clean-prod rebuild help logs-dev logs-prod setup-ssl
+.PHONY: setup dev prod frontend test down-dev down-prod clean-dev clean-prod rebuild help logs-dev logs-prod setup-ssl makemigrations migrate downgrade show_migrations
 
 # Переменные
 DOCKER_COMPOSE_DEV = docker/docker-compose.dev.yml
@@ -34,6 +34,14 @@ help:
 	@echo "  • Общие команды:"
 	@echo "    make test       - Запуск всех тестов"
 	@echo "    make rebuild    - Пересборка контейнеров разработки"
+	@echo "  • Миграции:"
+	@echo "    make makemigrations    - Создать новую миграцию (автоматическое имя или переданное MIGRATION_NAME)"
+	@echo "    make migrate            - Применить все миграции (alembic upgrade head)"
+	@echo "    make downgrade          - Откатить одну миграцию назад (alembic downgrade -1)"
+	@echo "    make show_migrations    - Показать историю всех миграций"
+	@echo "  • База данных:"
+	@echo "    make reset-db           - Полностью очистить и пересоздать базу данных"
+	@echo "    make seed-db            - Наполнить базу тестовыми данными"
 
 # Инициализация проекта
 setup:
@@ -110,5 +118,29 @@ rebuild-backend:
 	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d --no-deps celery_worker
 	@echo "Backend в продакшн пересобран и запущен"
 
+# Миграции
+MIGRATION_NAME ?= migration_$(shell date +"%Y%m%d_%H%M%S")
+
+makemigrations:
+	docker-compose exec backend alembic revision --autogenerate -m "$(MIGRATION_NAME)"
+
+migrate:
+	docker-compose exec backend alembic upgrade head
+
+downgrade:
+	docker-compose exec backend alembic downgrade -1
+
+show_migrations:
+	docker-compose exec backend alembic history --verbose
+
+# Работа с базой данных
+reset-db:
+	docker-compose down -v
+	docker-compose up -d db
+	sleep 5
+	make migrate
+
+seed-db:
+	docker-compose exec backend python -m scripts.seed_data
 # Значение по умолчанию
 default: help

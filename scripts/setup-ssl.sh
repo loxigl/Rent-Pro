@@ -122,7 +122,7 @@ fi
 
 # Генерируем продакшн конфиг Nginx
 NGINX_DEFAULT_CONF="$ROOT_DIR/docker/nginx/conf.d/default.conf"
-NGINX_TEMPLATE_CONF="$ROOT_DIR/docker/nginx/conf.d/default.template.conf"
+NGINX_TEMPLATE_CONF="$ROOT_DIR/docker/nginx/default.template.conf"
 
 log "📝 Создание production конфигурации Nginx"
 cat "$NGINX_TEMPLATE_CONF" > "$NGINX_DEFAULT_CONF"

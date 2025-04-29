@@ -73,6 +73,8 @@ apps/frontend/build/
 apps/frontend/.turbo/
 apps/frontend/.swc/
 
+docker/nginx/conf.d/default.template.conf
+
 
 # Next.js
 .next/

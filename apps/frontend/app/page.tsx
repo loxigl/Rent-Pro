@@ -2,7 +2,7 @@ import {Button} from "@/components/ui/Button";
 import Link from "next/link";
 import {getApartments} from "@/lib/api/apartments";
 import ApartmentCard from "@/components/apartments/ApartmentCard";
-
+export const dynamic = 'force-dynamic';
 /**
  * Главная страница с ограниченным количеством квартир и призывом перейти в каталог
  */

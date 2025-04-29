@@ -9,6 +9,8 @@ import {Markdown} from "@/components/ui/Markdown";
 import {formatPrice} from "@/lib/utils/format";
 import {Suspense} from "react";
 
+export const dynamic = 'force-dynamic';
+
 // Генерация метаданных для страницы
 export async function generateMetadata({
                                            params

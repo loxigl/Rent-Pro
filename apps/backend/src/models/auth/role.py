@@ -1,7 +1,10 @@
 from sqlalchemy import Column, String, CheckConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import func
+import logging
 
 from src.db.database import Base
+
+logger = logging.getLogger(__name__)
 
 
 class RolePermission(Base):
@@ -59,24 +62,46 @@ MANAGER_PERMISSIONS = [
 ]
 
 
-# Функция для инициализации разрешений в базе данных
+# Улучшенная функция инициализации разрешений
 def initialize_permissions(db_session):
     """
     Инициализирует разрешения для ролей в базе данных.
-    Должна вызываться при миграции или первом запуске приложения.
+    Добавляет только недостающие разрешения, не удаляя существующие.
 
     Args:
         db_session: Сессия базы данных SQLAlchemy
     """
-    # Сначала удаляем все существующие разрешения
-    db_session.query(RolePermission).delete()
+    try:
+        # Получаем существующие разрешения
+        existing_permissions = {}
+        for role_perm in db_session.query(RolePermission).all():
+            if role_perm.role not in existing_permissions:
+                existing_permissions[role_perm.role] = set()
+            existing_permissions[role_perm.role].add(role_perm.perm)
 
-    # Добавляем разрешения для владельца
-    for perm in OWNER_PERMISSIONS:
-        db_session.add(RolePermission(role="owner", perm=perm))
+        # Счетчик добавленных разрешений
+        added_count = 0
 
-    # Добавляем разрешения для менеджера
-    for perm in MANAGER_PERMISSIONS:
-        db_session.add(RolePermission(role="manager", perm=perm))
+        # Добавляем недостающие разрешения для владельца
+        for perm in OWNER_PERMISSIONS:
+            if "owner" not in existing_permissions or perm not in existing_permissions["owner"]:
+                db_session.add(RolePermission(role="owner", perm=perm))
+                added_count += 1
 
-    db_session.commit()
+        # Добавляем недостающие разрешения для менеджера
+        for perm in MANAGER_PERMISSIONS:
+            if "manager" not in existing_permissions or perm not in existing_permissions["manager"]:
+                db_session.add(RolePermission(role="manager", perm=perm))
+                added_count += 1
+
+        if added_count > 0:
+            db_session.commit()
+            logger.info(f"Добавлено {added_count} недостающих разрешений")
+        else:
+            logger.info("Все необходимые разрешения уже существуют")
+
+        return True
+    except Exception as e:
+        db_session.rollback()
+        logger.error(f"Ошибка при инициализации разрешений: {e}")
+        return False

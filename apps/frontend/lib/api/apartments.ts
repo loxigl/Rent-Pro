@@ -44,12 +44,24 @@ export interface GetApartmentsParams {
     order?: 'asc' | 'desc';
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL + '/api/v1' || 'http://localhost:8000' + '/api/v1';
+// Исправляем потенциальное дублирование /api
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = API_BASE.endsWith('/api/v1') ? API_BASE : `${API_BASE}/api/v1`;
 
 /**
  * Получение списка квартир с пагинацией и сортировкой
  */
 export async function getApartments(params: GetApartmentsParams = {}): Promise<ApartmentListResponse> {
+    // В статическом режиме возвращаем пустые данные
+    if (process.env.BUILD_MODE === 'static') {
+        return {
+            page: 1,
+            page_size: 12,
+            total: 0,
+            items: []
+        };
+    }
+
     const {
         page = 1,
         page_size = 12,
@@ -64,26 +76,72 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
         order,
     });
 
-    const response = await fetch(`${API_URL}/apartments?${searchParams.toString()}`);
+    try {
+        const response = await fetch(`${API_URL}/apartments?${searchParams.toString()}`);
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch apartments: ${response.status}, url: ${response.url}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch apartments: ${response.status}, url: ${response.url}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error("Error fetching apartments:", error);
+        // Возвращаем пустые данные при ошибке
+        return {
+            page: 1,
+            page_size: 12,
+            total: 0,
+            items: []
+        };
     }
-
-    return response.json();
 }
 
 /**
  * Получение детальной информации о квартире по ID
  */
 export async function getApartmentById(id: number): Promise<ApartmentDetail> {
-    const response = await fetch(`${API_URL}/apartments/${id}`);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}, url: ${response.url}`);
+    // В статическом режиме возвращаем мок-данные
+    if (process.env.BUILD_MODE === 'static') {
+        return {
+            id,
+            title: "Временные данные для сборки",
+            price_rub: 2000,
+            rooms: 2,
+            floor: 3,
+            area_m2: 50,
+            address: "г. Невинномысск",
+            description: "Временное описание для статической сборки",
+            active: true,
+            photos: [],
+            created_at: new Date().toISOString()
+        };
     }
 
-    return response.json();
+    try {
+        const response = await fetch(`${API_URL}/apartments/${id}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}, url: ${response.url}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error(`Error fetching apartment ${id}:`, error);
+        // Возвращаем мок-данные при ошибке
+        return {
+            id,
+            title: "Данные недоступны",
+            price_rub: 0,
+            rooms: 0,
+            floor: 0,
+            area_m2: 0,
+            address: "Адрес недоступен",
+            description: "Не удалось загрузить данные",
+            active: false,
+            photos: [],
+            created_at: new Date().toISOString()
+        };
+    }
 }
 
 /**
