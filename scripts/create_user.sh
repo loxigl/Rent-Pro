@@ -15,10 +15,11 @@ echo -e "${YELLOW}=================================================${NC}"
 ROOT_DIR=$(pwd)
 
 # Проверяем, запущен ли Docker
-if docker ps | grep -q "avitorentpro.*backend"; then
+if docker ps | grep "backend"; then
     echo -e "${YELLOW}📦 Запуск в Docker контейнере...${NC}"
     # Определяем имя контейнера
     CONTAINER=$(docker ps --format '{{.Names}}' | grep backend | head -n 1)
+    echo $CONTAINER
 
     if [ -n "$CONTAINER" ]; then
         # Передаем все аргументы в скрипт внутри контейнера

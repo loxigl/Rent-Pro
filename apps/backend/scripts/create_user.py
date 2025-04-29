@@ -4,13 +4,13 @@
 Запуск: python -m scripts.create_user [--email EMAIL] [--password PASSWORD] [--role ROLE]
                                       [--first_name FIRST_NAME] [--last_name LAST_NAME]
 """
-
 import sys
 import os
 import logging
 import argparse
 from getpass import getpass
 
+sys.stdout.reconfigure(encoding='utf-8')
 # Добавляем путь к корневой директории проекта
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,6 +21,24 @@ from src.services.auth import hash_password, validate_password
 # Настройка логгера
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def normalize_unicode(text):
+    """Нормализует и очищает текст от проблемных символов"""
+    if not text:
+        return text
+
+    # Импортируем unicodedata только если функция вызвана
+    import unicodedata
+
+    # Нормализуем Unicode и удаляем суррогатные пары
+    try:
+        normalized = unicodedata.normalize('NFKC', text)
+        # Удаляем любые суррогатные пары
+        return ''.join(c for c in normalized if not (0xD800 <= ord(c) <= 0xDFFF))
+    except Exception:
+        # В случае ошибки, возвращаем безопасную версию строки
+        return text.encode('ascii', errors='ignore').decode('ascii')
 
 
 def create_user(
@@ -47,6 +65,12 @@ def create_user(
     Returns:
         bool: True если пользователь успешно создан, иначе False
     """
+    if first_name:
+        # Используем нормализацию NFKD для правильной обработки символов
+        first_name = normalize_unicode(first_name)
+    if last_name:
+        last_name = normalize_unicode(last_name)
+    email = normalize_unicode(email)
     db = SessionLocal()
     try:
         # Проверяем, существует ли пользователь с таким email

@@ -171,7 +171,9 @@ async def upload_photo(
         db.refresh(new_photo)
 
         # 2. Запускаем обработку в Celery без ожидания результата
+        logger.info("Calling process_image.delay(...)")
         task = process_image.delay(file_content, apartment_id)
+        logger.info(f"Task ID: {task.id}")
 
         # 3. Создаем фоновую задачу для обновления записи после обработки
         async def update_photo_url():

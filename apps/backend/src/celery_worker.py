@@ -1,4 +1,5 @@
 import logging
+from kombu import Queue
 import os
 from celery import Celery
 from io import BytesIO
@@ -12,6 +13,19 @@ from src.config.settings import settings
 # Настройка логгера
 logger = logging.getLogger(__name__)
 
+ALL_QUEUES: dict[str, Queue] = {
+    # тяжёлые CPU-bound задачи обработки картинок
+    "images":  Queue("images",  routing_key="images"),
+    # отправка email / push-ов
+    "notifications": Queue("notifications", routing_key="notifications"),
+    # генерация отчётов, экспортов, cron-подобные задачи
+    "reports": Queue("reports", routing_key="reports"),
+}
+
+celery_app.conf.update(
+    task_default_queue="default",                # пусть «обычные» таски идут в default
+    task_queues=tuple(ALL_QUEUES.values()),
+)
 # Настройка Celery
 celery_app = Celery(
     'avitorentpro',
