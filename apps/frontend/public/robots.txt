@@ -16,4 +16,4 @@ User-agent: Baiduspider
 Crawl-delay: 10
 
 # Site map
-Sitemap: https://avitorentpro.ru/sitemap.xml
+Sitemap: https://kvartiry26.ru/sitemap.xml

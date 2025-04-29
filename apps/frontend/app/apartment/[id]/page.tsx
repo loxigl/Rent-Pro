@@ -27,7 +27,7 @@ export async function generateMetadata({
                 ? apartment.description.slice(0, 160).replace(/<\/?[^>]+(>|$)/g, "")
                 : `Квартира с ${apartment.rooms} комнатами, площадью ${apartment.area_m2} м²`,
             openGraph: {
-                title: `${apartment.title} | AvitoRentPro`,
+                title: `${apartment.title} | Kvartiry26`,
                 description: apartment.description
                     ? apartment.description.slice(0, 160).replace(/<\/?[^>]+(>|$)/g, "")
                     : `Квартира с ${apartment.rooms} комнатами, площадью ${apartment.area_m2} м²`,
@@ -38,7 +38,7 @@ export async function generateMetadata({
             },
             // JSON-LD для Product/Offer, поисковиков
             alternates: {
-                canonical: `https://avitorentpro.ru/apartment/${id}`,
+                canonical: `https://kvartiry26.ru/apartment/${id}`,
             },
         };
     } catch (error) {
@@ -129,7 +129,7 @@ export default async function ApartmentDetailPage({
 
                         <ContactButtons
                             phone="+79991234567"
-                            telegram="avitorentpro"
+                            telegram="Kvartiry26"
                         />
                     </div>
 
