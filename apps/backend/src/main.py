@@ -36,9 +36,17 @@ origins = [
     "http://localhost:3000",  # Frontend dev
     "http://localhost:8000",  # Backend dev
     "https://kvartiry26.ru",  # Frontend prod
+    "https://admin.kvartiry26.ru"  # Admin panel prod
 ]
 
 app1.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
