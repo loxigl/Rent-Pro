@@ -1,7 +1,7 @@
 # Основные зависимости
 fastapi==0.110.0
 uvicorn==0.27.1
-sqlalchemy==2.0.28
+sqlalchemy
 psycopg2-binary==2.9.9
 alembic==1.13.1
 pydantic==2.6.3
@@ -48,3 +48,6 @@ python-multipart==0.0.9
 
 pydantic[email]
 tenacity
+jinja2
+PyJWT
+Pillow>=9.0.0

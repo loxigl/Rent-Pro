@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from sqlalchemy import Column, String, CheckConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import func
 import logging
@@ -7,7 +8,42 @@ from src.db.database import Base
 logger = logging.getLogger(__name__)
 
 
-class RolePermission(Base):
+class RolePermission(str, Enum):
+    """
+    Перечисление всех возможных разрешений в системе.
+    Используется для проверки прав доступа в декораторах.
+    """
+    # Квартиры
+    APARTMENTS_READ = "apartments:read"
+    APARTMENTS_WRITE = "apartments:write"
+    MANAGE_APARTMENTS = "apartments:write"  # Алиас для обратной совместимости
+
+    # Фотографии
+    PHOTOS_READ = "photos:read"
+    PHOTOS_WRITE = "photos:write"
+    MANAGE_PHOTOS = "photos:write"  # Алиас для обратной совместимости
+
+    # Журнал событий
+    EVENTS_READ = "events:read"
+    VIEW_EVENTS = "events:read"  # Алиас для обратной совместимости
+
+    # Пользователи
+    USERS_READ = "users:read"
+    USERS_WRITE = "users:write"
+    MANAGE_USERS = "users:write"  # Алиас для обратной совместимости
+
+    # Бронирования
+    BOOKINGS_READ = "bookings:read"
+    BOOKINGS_WRITE = "bookings:write"
+    MANAGE_BOOKINGS = "bookings:write"  # Алиас для обратной совместимости
+
+    # Настройки
+    SETTINGS_READ = "settings:read"
+    SETTINGS_WRITE = "settings:write"
+    MANAGE_SETTINGS = "settings:write"  # Алиас для обратной совместимости
+
+
+class RolePermissionModel(Base):
     """
     Модель разрешений для ролей в системе.
     Каждая запись связывает роль с определённым разрешением.
@@ -48,27 +84,14 @@ class RolePermission(Base):
 
 
 # Предопределенные разрешения для ролей
-OWNER_PERMISSIONS = [
-    "apartments:read",
-    "apartments:write",
-    "photos:read",
-    "photos:write",
-    "events:read",
-    "users:read",
-    "users:write",
-    "bookings:read",
-    "bookings:write",
-    "settings:read",
-    "settings:write",
-]
-
+OWNER_PERMISSIONS = [perm.value for perm in RolePermission if not perm.value.endswith("_ALIAS")]
 MANAGER_PERMISSIONS = [
-    "apartments:read",
-    "apartments:write",
-    "photos:read",
-    "photos:write",
-    "bookings:read",
-    "bookings:write",
+    RolePermission.APARTMENTS_READ.value,
+    RolePermission.APARTMENTS_WRITE.value,
+    RolePermission.PHOTOS_READ.value,
+    RolePermission.PHOTOS_WRITE.value,
+    RolePermission.BOOKINGS_READ.value,
+    RolePermission.BOOKINGS_WRITE.value,
 ]
 
 
@@ -84,7 +107,7 @@ def initialize_permissions(db_session):
     try:
         # Получаем существующие разрешения
         existing_permissions = {}
-        for role_perm in db_session.query(RolePermission).all():
+        for role_perm in db_session.query(RolePermissionModel).all():
             if role_perm.role not in existing_permissions:
                 existing_permissions[role_perm.role] = set()
             existing_permissions[role_perm.role].add(role_perm.perm)
@@ -95,13 +118,13 @@ def initialize_permissions(db_session):
         # Добавляем недостающие разрешения для владельца
         for perm in OWNER_PERMISSIONS:
             if "owner" not in existing_permissions or perm not in existing_permissions["owner"]:
-                db_session.add(RolePermission(role="owner", perm=perm))
+                db_session.add(RolePermissionModel(role="owner", perm=perm))
                 added_count += 1
 
         # Добавляем недостающие разрешения для менеджера
         for perm in MANAGER_PERMISSIONS:
             if "manager" not in existing_permissions or perm not in existing_permissions["manager"]:
-                db_session.add(RolePermission(role="manager", perm=perm))
+                db_session.add(RolePermissionModel(role="manager", perm=perm))
                 added_count += 1
 
         if added_count > 0:

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from src.db.database import get_db
+from src.models import RolePermission
 from src.services.auth import verify_access_token
 from src.schemas.admin import TokenData
 from src.models.auth import User
@@ -20,6 +21,7 @@ VIEW_EVENTS = ["events:read"]
 MANAGE_USERS = ["users:write"]
 MANAGE_BOOKINGS = ["bookings:write"]
 MANAGE_SETTINGS = ["settings:write"]
+
 
 async def get_current_user(
         token: str = Depends(oauth2_scheme),
@@ -124,3 +126,49 @@ def get_manager_user(current_user: User = Depends(get_current_active_user)) -> U
             detail="Требуются права менеджера",
         )
     return current_user
+
+
+def check_permissions(required_permissions=None):
+    """
+    Создает зависимость для проверки разрешений пользователя.
+
+    Args:
+        required_permissions: Список или одиночное разрешение, необходимое для доступа
+
+    Returns:
+        Функция зависимости, которая возвращает пользователя, если у него есть необходимые разрешения
+    """
+
+    async def _check_user_permissions(current_user: User = Depends(get_current_active_user)) -> User:
+        # Если разрешения не указаны, просто возвращаем пользователя
+        if not required_permissions:
+            return current_user
+
+        # Получаем список разрешений пользователя
+        user_permissions = []
+        if current_user.role == "owner":
+            # Владелец имеет все разрешения
+            user_permissions = [perm.value for perm in RolePermission]
+        elif current_user.permissions:
+            # Используем сохраненные разрешения пользователя
+            user_permissions = current_user.permissions
+
+        # Проверяем наличие требуемых разрешений
+        if isinstance(required_permissions, list):
+            # Если требуется несколько разрешений
+            if not all(perm in user_permissions for perm in required_permissions):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Недостаточно прав для выполнения операции",
+                )
+        else:
+            # Если требуется одно разрешение
+            if required_permissions not in user_permissions:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Недостаточно прав для выполнения операции",
+                )
+
+        return current_user
+
+    return _check_user_permissions

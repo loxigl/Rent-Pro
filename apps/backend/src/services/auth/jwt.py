@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import jwt
-from jwt.exceptions import PyJWTError
+from jwt.exceptions import InvalidTokenError as PyJWTError
 import logging
 import redis
 import os

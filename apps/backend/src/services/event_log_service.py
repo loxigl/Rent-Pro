@@ -1,166 +1,258 @@
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from typing import Optional, Union, Dict, Any, List
+from sqlalchemy import select, func, desc
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from fastapi import Request
-
 from src.models.event_log import EventLog, EventType, EntityType
 
 
-async def log_event(
-        db: Session,
-        event_type: str,
+async def log_action(
+        db: AsyncSession,
+        entity_type: EntityType,
+        entity_id: Union[int, str],
+        event_type: EventType,
+        description: str,
         user_id: Optional[int] = None,
-        entity_type: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        payload: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None,
-) -> EventLog:
+        metadata: Optional[Dict[str, Any]] = None
+):
     """
-    Записывает событие в журнал.
-
+    Записывает событие в журнал действий.
+    
     Args:
         db: Сессия базы данных
-        event_type: Тип события (из EventType)
-        user_id: ID пользователя, совершившего действие
-        entity_type: Тип сущности (из EntityType)
+        entity_type: Тип сущности (APARTMENT, USER, BOOKING и т.д.)
         entity_id: ID сущности
-        payload: Дополнительные данные о событии
-        request: Объект запроса FastAPI (для получения IP и User-Agent)
-
-    Returns:
-        EventLog: Созданная запись о событии
+        event_type: Тип события (CREATE, UPDATE, DELETE и т.д.)
+        description: Описание события
+        user_id: ID пользователя, выполнившего действие (опционально)
+        metadata: Дополнительные данные, связанные с событием (опционально)
     """
-    # Получаем IP-адрес и User-Agent из запроса, если он передан
-    ip_address = None
-    user_agent = None
+    try:
+        event = EventLog(
+            entity_type=entity_type,
+            entity_id=str(entity_id),
+            event_type=event_type,
+            description=description,
+            user_id=user_id,
+            metadata=metadata
+        )
 
-    if request:
-        # Получаем IP-адрес, учитывая возможность использования прокси
-        ip_address = request.client.host
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            # Используем первый IP-адрес из списка X-Forwarded-For
-            ip_address = forwarded_for.split(",")[0].strip()
-
-        # Получаем User-Agent
-        user_agent = request.headers.get("User-Agent")
-
-    # Создаем запись о событии
-    event_log = EventLog(
-        user_id=user_id,
-        event_type=event_type,
-        entity_type=entity_type,
-        entity_id=str(entity_id) if entity_id is not None else None,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        payload=payload
-    )
-
-    # Сохраняем запись в базе данных
-    db.add(event_log)
-    db.commit()
-    db.refresh(event_log)
-
-    return event_log
+        db.add(event)
+        await db.commit()
+        await db.refresh(event)
+        return event
+    except Exception as e:
+        await db.rollback()
+        raise e
 
 
 async def get_events(
-        db: Session,
-        page: int = 1,
-        page_size: int = 20,
+        db: AsyncSession,
+        entity_type: Optional[EntityType] = None,
+        entity_id: Optional[str] = None,
+        event_type: Optional[EventType] = None,
         user_id: Optional[int] = None,
-        event_type: Optional[str] = None,
-        entity_type: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        limit: int = 100,
+        offset: int = 0
 ) -> tuple[List[EventLog], int]:
     """
-    Получает список событий с фильтрацией и пагинацией.
-
+    Получает записи журнала событий с возможностью фильтрации.
+    
     Args:
         db: Сессия базы данных
-        page: Номер страницы
-        page_size: Размер страницы
-        user_id: Фильтр по ID пользователя
-        event_type: Фильтр по типу события
         entity_type: Фильтр по типу сущности
-        start_date: Фильтр по дате начала
-        end_date: Фильтр по дате окончания
+        entity_id: Фильтр по ID сущности
+        event_type: Фильтр по типу события
+        user_id: Фильтр по ID пользователя
+        limit: Максимальное количество записей
+        offset: Смещение для пагинации
 
     Returns:
-        tuple[List[EventLog], int]: Список событий и общее количество
+        Кортеж (список событий, общее количество записей)
     """
-    # Формируем запрос с учетом фильтров
-    query = db.query(EventLog)
+    query = select(EventLog).order_by(desc(EventLog.timestamp))
+    count_query = select(func.count()).select_from(EventLog)
 
-    if user_id is not None:
-        query = query.filter(EventLog.user_id == user_id)
+    # Применяем фильтры, если они указаны
+    if entity_type:
+        query = query.where(EventLog.entity_type == entity_type)
+        count_query = count_query.where(EventLog.entity_type == entity_type)
+
+    if entity_id:
+        query = query.where(EventLog.entity_id == str(entity_id))
+        count_query = count_query.where(EventLog.entity_id == str(entity_id))
 
     if event_type:
-        query = query.filter(EventLog.event_type == event_type)
+        query = query.where(EventLog.event_type == event_type)
+        count_query = count_query.where(EventLog.event_type == event_type)
 
-    if entity_type:
-        query = query.filter(EventLog.entity_type == entity_type)
+    if user_id:
+        query = query.where(EventLog.user_id == user_id)
+        count_query = count_query.where(EventLog.user_id == user_id)
 
-    if start_date:
-        query = query.filter(EventLog.timestamp >= start_date)
+    # Применяем пагинацию
+    query = query.offset(offset).limit(limit)
 
-    if end_date:
-        query = query.filter(EventLog.timestamp <= end_date)
+    # Выполняем запросы
+    result = await db.execute(query)
+    count_result = await db.execute(count_query)
 
-    # Получаем общее количество записей
-    total = query.count()
+    # Получаем результаты
+    events = result.scalars().all()
+    total_count = count_result.scalar_one()
 
-    # Применяем пагинацию и сортировку
-    events = query.order_by(desc(EventLog.timestamp)).offset((page - 1) * page_size).limit(page_size).all()
-
-    return events, total
+    return events, total_count
 
 
-async def get_event_by_id(db: Session, event_id: str) -> Optional[EventLog]:
+async def get_event_by_id(db: AsyncSession, event_id: int) -> Optional[EventLog]:
     """
-    Получает событие по ID.
-
+    Получает событие по его ID.
+    
     Args:
         db: Сессия базы данных
         event_id: ID события
-
+        
     Returns:
-        Optional[EventLog]: Событие или None, если не найдено
+        Объект события или None, если событие не найдено
     """
-    return db.query(EventLog).filter(EventLog.id == event_id).first()
+    query = select(EventLog).where(EventLog.id == event_id)
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
 
 
-async def get_event_stats(
-        db: Session,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-) -> Dict[str, int]:
+async def log_event(
+        db: AsyncSession,
+        event_type: EventType,
+        entity_type: EntityType,
+        entity_id: str = None,
+        user_id: int = None,
+        payload: dict = None,
+        request: Request = None
+):
     """
-    Получает статистику по типам событий.
+    Логирует событие в журнал действий.
 
     Args:
         db: Сессия базы данных
-        start_date: Фильтр по дате начала
-        end_date: Фильтр по дате окончания
+        event_type: Тип события
+        entity_type: Тип сущности
+        entity_id: ID сущности (опционально)
+        user_id: ID пользователя (опционально)
+        payload: Дополнительные данные события (опционально)
+        request: Объект запроса (опционально)
+    """
+    # Получаем IP и User-Agent из запроса, если он предоставлен
+    metadata = {}
+    if request:
+        client_host = request.client.host if hasattr(request, 'client') else None
+        metadata.update({
+            "ip_address": client_host,
+            "user_agent": request.headers.get("user-agent")
+        })
+
+    if payload:
+        metadata.update({"payload": payload})
+
+    # Вызываем функцию log_action для фактического сохранения
+    return await log_action(
+        db=db,
+        entity_type=entity_type,
+        entity_id=entity_id or "system",
+        event_type=event_type,
+        description=f"{event_type.value} для {entity_type.value}",
+        user_id=user_id,
+        metadata=metadata
+    )
+
+
+async def get_event_stats(
+        db: AsyncSession,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+) -> dict:
+    """
+    Получает статистику по типам событий с возможностью фильтрации по датам.
+
+    Args:
+        db: Сессия базы данных
+        start_date: Начальная дата для фильтрации
+        end_date: Конечная дата для фильтрации
 
     Returns:
-        Dict[str, int]: Словарь {тип_события: количество}
+        Словарь со статистикой по типам событий и сущностей
     """
-    # Формируем запрос с учетом фильтров
-    query = db.query(EventLog.event_type, func.count(EventLog.id).label('count')).group_by(EventLog.event_type)
+    # Базовый запрос для статистики по типам событий
+    event_type_query = select(
+        EventLog.event_type,
+        func.count(EventLog.id).label('count')
+    ).group_by(EventLog.event_type)
 
+    # Базовый запрос для статистики по типам сущностей
+    entity_type_query = select(
+        EventLog.entity_type,
+        func.count(EventLog.id).label('count')
+    ).group_by(EventLog.entity_type)
+
+    # Базовый запрос для статистики по пользователям
+    user_query = select(
+        EventLog.user_id,
+        func.count(EventLog.id).label('count')
+    ).where(EventLog.user_id.isnot(None)).group_by(EventLog.user_id)
+
+    # Применяем фильтры по датам, если они указаны
     if start_date:
-        query = query.filter(EventLog.timestamp >= start_date)
+        event_type_query = event_type_query.where(EventLog.timestamp >= start_date)
+        entity_type_query = entity_type_query.where(EventLog.timestamp >= start_date)
+        user_query = user_query.where(EventLog.timestamp >= start_date)
 
     if end_date:
-        query = query.filter(EventLog.timestamp <= end_date)
+        event_type_query = event_type_query.where(EventLog.timestamp <= end_date)
+        entity_type_query = entity_type_query.where(EventLog.timestamp <= end_date)
+        user_query = user_query.where(EventLog.timestamp <= end_date)
 
-    # Выполняем запрос
-    results = query.all()
+    # Запрос на общее количество событий
+    total_query = select(func.count(EventLog.id))
+    if start_date:
+        total_query = total_query.where(EventLog.timestamp >= start_date)
+    if end_date:
+        total_query = total_query.where(EventLog.timestamp <= end_date)
 
-    # Формируем словарь с результатами
-    stats = {event_type: count for event_type, count in results}
+    # Выполняем запросы
+    event_type_result = await db.execute(event_type_query)
+    entity_type_result = await db.execute(entity_type_query)
+    user_result = await db.execute(user_query)
+    total_result = await db.execute(total_query)
 
-    return stats
+    # Обрабатываем результат для типов событий
+    event_type_stats = {}
+    for event_type, count in event_type_result:
+        event_type_stats[event_type.value] = count
+
+    # Обрабатываем результат для типов сущностей
+    entity_type_stats = {}
+    for entity_type, count in entity_type_result:
+        entity_type_stats[entity_type.value] = count
+
+    # Обрабатываем результат для пользователей
+    user_stats = []
+    for user_id, count in user_result:
+        user_stats.append({"user_id": user_id, "count": count})
+
+    # Сортируем пользователей по количеству событий (в порядке убывания)
+    user_stats.sort(key=lambda x: x["count"], reverse=True)
+
+    # Получаем общее количество событий
+    total_count = total_result.scalar_one() or 0
+
+    # Формируем результат
+    return {
+        "total_events": total_count,
+        "by_event_type": event_type_stats,
+        "by_entity_type": entity_type_stats,
+        "by_user": user_stats[:10],  # Ограничиваем список топ-10 пользователей
+        "period": {
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None
+        }
+    }

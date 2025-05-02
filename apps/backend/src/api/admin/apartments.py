@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, Path
-from sqlalchemy.orm import Session, AsyncSession
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc, asc, select
 from typing import Optional, List
 import logging
@@ -12,10 +13,10 @@ from src.schemas.admin import (
     ApartmentAdminCreate, ApartmentAdminUpdate, ApartmentAdminDetail,
     ApartmentAdminListResponse, ApartmentAdminListItem
 )
-from src.middleware.auth import get_current_active_user
+from src.middleware.auth import get_current_active_user,check_permissions
 from src.middleware.acl import require_apartments_read, require_apartments_write
 from src.services.event_log_service import log_event, log_action
-from src.models.role import RolePermission
+from src.models.auth.role import RolePermission
 
 router = APIRouter(prefix="/apartments", tags=["admin-apartments"])
 logger = logging.getLogger(__name__)
@@ -367,10 +368,10 @@ async def delete_apartment(
 
 @router.patch("/{apartment_id}/booking-toggle", response_model=dict)
 async def toggle_apartment_booking(
-    apartment_id: int = Path(..., description="ID квартиры"),
-    enable: bool = Query(True, description="Включить или отключить бронирование"),
-    db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_active_user(required_permissions=RolePermission.MANAGE_APARTMENTS))
+        apartment_id: int = Path(..., description="ID квартиры"),
+        enable: bool = Query(True, description="Включить или отключить бронирование"),
+        db: AsyncSession = Depends(get_db),
+        current_user: dict = Depends(check_permissions(required_permissions=RolePermission.MANAGE_APARTMENTS))
 ):
     """
     Включить/отключить возможность бронирования для конкретной квартиры.
@@ -379,16 +380,16 @@ async def toggle_apartment_booking(
     apartment_query = select(Apartment).where(Apartment.id == apartment_id)
     result = await db.execute(apartment_query)
     apartment = result.scalars().first()
-    
+
     if not apartment:
         raise HTTPException(
             status_code=404,
             detail=f"Квартира с ID {apartment_id} не найдена"
         )
-    
+
     # Обновляем поле booking_enabled
     apartment.booking_enabled = enable
-    
+
     # Логируем изменение
     action = "включена" if enable else "отключена"
     await log_action(
@@ -402,9 +403,9 @@ async def toggle_apartment_booking(
         user_agent=None,
         payload={"booking_enabled": enable}
     )
-    
+
     await db.commit()
-    
+
     return {
         "apartment_id": apartment_id,
         "booking_enabled": enable,
