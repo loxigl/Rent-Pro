@@ -399,9 +399,7 @@ async def toggle_apartment_booking(
         event_type=EventType.APARTMENT_UPDATED,
         description=f"Возможность бронирования для квартиры #{apartment_id} {action} пользователем {current_user.get('username')}",
         user_id=current_user.get('id'),
-        ip_address=None,
-        user_agent=None,
-        payload={"booking_enabled": enable}
+        metadata={"booking_enabled": enable}
     )
 
     await db.commit()
@@ -411,3 +409,4 @@ async def toggle_apartment_booking(
         "booking_enabled": enable,
         "message": f"Возможность бронирования для квартиры {apartment_id} успешно {'включена' if enable else 'отключена'}"
     }
+

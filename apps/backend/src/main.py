@@ -33,23 +33,24 @@ logging.basicConfig(
 logger = logging.getLogger("api")
 
 # Определение префикса для API
-API_PREFIX = "/api"
 
+ApiPath="/api"
 # Создание FastAPI приложения
 app = FastAPI(
     title="AvitoRentPro API",
     description="API для сервиса аренды квартир",
     version="1.0.0",
-    docs_url=f"{API_PREFIX}/docs",
-    redoc_url=f"{API_PREFIX}/redoc",
-    openapi_url=f"{API_PREFIX}/openapi.json",
-    root_path="/api"  # Добавляем root_path для поддержки проксирования через /api
+    docs_url=f"/docs",
+    redoc_url=f"/redoc",
+    openapi_url=f"/openapi.json",
+    root_path="/api"
 )
 
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене следует указать конкретные домены
+    allow_origins=["localhost",
+                   "http://localhost:3000, https://localhost:3000, https://kvartiry26.ru, https://admin.kvartiry26.ru"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,12 +70,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 # Регистрация маршрутов с префиксом /api
-app.include_router(auth_router, prefix=API_PREFIX)
-app.include_router(apartment_router, prefix=API_PREFIX)
-app.include_router(image_router, prefix=API_PREFIX)
-app.include_router(bookings_router, prefix=API_PREFIX)
-app.include_router(settings_router, prefix=API_PREFIX)
-app.include_router(admin_router, prefix=API_PREFIX)
+app.include_router(auth_router)
+app.include_router(apartment_router)
+app.include_router(image_router)
+app.include_router(bookings_router)
+app.include_router(settings_router)
+app.include_router(admin_router)
 
 # Настройка статических файлов
 static_dir = os.path.join(os.getcwd(), settings.STATIC_DIR)
@@ -83,7 +84,7 @@ os.makedirs(static_dir, exist_ok=True)
 upload_dir = os.path.join(static_dir, settings.UPLOAD_DIR)
 os.makedirs(upload_dir, exist_ok=True)
 
-app.mount(f"{API_PREFIX}/static", StaticFiles(directory=static_dir), name="static")
+app.mount(f"/static", StaticFiles(directory=static_dir), name="static")
 
 
 # Middleware для логирования запросов
@@ -128,7 +129,7 @@ async def startup_event():
         db.close()
 
 
-@app.get(f"{API_PREFIX}/health")
+@app.get(f"/health")
 async def health_check():
     return {"status": "ok"}
 

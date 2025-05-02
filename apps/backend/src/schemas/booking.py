@@ -14,7 +14,8 @@ class BookingBase(BaseModel):
     check_in_date: datetime = Field(..., description="Дата заезда")
     check_out_date: datetime = Field(..., description="Дата выезда")
     guests_count: int = Field(1, description="Количество гостей", ge=1)
-    
+
+    @classmethod
     @validator('check_out_date')
     def check_dates(cls, v, values):
         if 'check_in_date' in values and v <= values['check_in_date']:
@@ -52,7 +53,7 @@ class BookingInDB(BookingBase):
     admin_comment: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -66,6 +67,6 @@ class BookingListResponse(BaseModel):
     """Схема ответа со списком бронирований."""
     total: int
     items: List[BookingResponse]
-    
+
     class Config:
-        orm_mode = True 
+        orm_mode = True

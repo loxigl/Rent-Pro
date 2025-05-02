@@ -1,14 +1,16 @@
 from datetime import datetime
 from typing import Optional, Union, Dict, Any, List
 from sqlalchemy import select, func, desc
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from sqlalchemy.orm import selectinload
+from src.db.database import get_db
 from fastapi import Request
 from src.models.event_log import EventLog, EventType, EntityType
 
 
-async def log_action(
-        db: AsyncSession,
+def log_action(
+        db: Session,
         entity_type: EntityType,
         entity_id: Union[int, str],
         event_type: EventType,
@@ -18,7 +20,7 @@ async def log_action(
 ):
     """
     Записывает событие в журнал действий.
-    
+
     Args:
         db: Сессия базы данных
         entity_type: Тип сущности (APARTMENT, USER, BOOKING и т.д.)
@@ -39,16 +41,16 @@ async def log_action(
         )
 
         db.add(event)
-        await db.commit()
-        await db.refresh(event)
+        db.commit()
+        db.refresh(event)
         return event
     except Exception as e:
-        await db.rollback()
+        db.rollback()
         raise e
 
 
-async def get_events(
-        db: AsyncSession,
+def get_events(
+        db: Session,
         entity_type: Optional[EntityType] = None,
         entity_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
@@ -58,7 +60,7 @@ async def get_events(
 ) -> tuple[List[EventLog], int]:
     """
     Получает записи журнала событий с возможностью фильтрации.
-    
+
     Args:
         db: Сессия базы данных
         entity_type: Фильтр по типу сущности
@@ -95,8 +97,8 @@ async def get_events(
     query = query.offset(offset).limit(limit)
 
     # Выполняем запросы
-    result = await db.execute(query)
-    count_result = await db.execute(count_query)
+    result = db.execute(query)
+    count_result = db.execute(count_query)
 
     # Получаем результаты
     events = result.scalars().all()
@@ -105,24 +107,24 @@ async def get_events(
     return events, total_count
 
 
-async def get_event_by_id(db: AsyncSession, event_id: int) -> Optional[EventLog]:
+def get_event_by_id(db: Session, event_id: int) -> Optional[EventLog]:
     """
     Получает событие по его ID.
-    
+
     Args:
         db: Сессия базы данных
         event_id: ID события
-        
+
     Returns:
         Объект события или None, если событие не найдено
     """
     query = select(EventLog).where(EventLog.id == event_id)
-    result = await db.execute(query)
+    result = db.execute(query)
     return result.scalar_one_or_none()
 
 
-async def log_event(
-        db: AsyncSession,
+def log_event(
+        db: Session,
         event_type: EventType,
         entity_type: EntityType,
         entity_id: str = None,
@@ -155,19 +157,22 @@ async def log_event(
         metadata.update({"payload": payload})
 
     # Вызываем функцию log_action для фактического сохранения
-    return await log_action(
+    return log_action(
         db=db,
         entity_type=entity_type,
         entity_id=entity_id or "system",
         event_type=event_type,
-        description=f"{event_type.value} для {entity_type.value}",
+        description=(
+            f"{event_type.value if hasattr(event_type, 'value') else event_type} "
+            f"для {entity_type.value if hasattr(entity_type, 'value') else entity_type}"
+        ),
         user_id=user_id,
         metadata=metadata
     )
 
 
-async def get_event_stats(
-        db: AsyncSession,
+def get_event_stats(
+        db: Session,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
 ) -> dict:
@@ -219,10 +224,10 @@ async def get_event_stats(
         total_query = total_query.where(EventLog.timestamp <= end_date)
 
     # Выполняем запросы
-    event_type_result = await db.execute(event_type_query)
-    entity_type_result = await db.execute(entity_type_query)
-    user_result = await db.execute(user_query)
-    total_result = await db.execute(total_query)
+    event_type_result = db.execute(event_type_query)
+    entity_type_result = db.execute(entity_type_query)
+    user_result = db.execute(user_query)
+    total_result = db.execute(total_query)
 
     # Обрабатываем результат для типов событий
     event_type_stats = {}

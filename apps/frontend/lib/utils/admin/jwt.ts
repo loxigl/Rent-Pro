@@ -3,7 +3,7 @@
  */
 
 // Базовый URL API
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiBaseUrl } from '@/lib/api/config';
 
 /**
  * Проверяет, истек ли токен
@@ -36,37 +36,39 @@ export const isTokenExpired = (token: string): boolean => {
  * @returns Promise<void>
  */
 export const refreshTokens = async (): Promise<void> => {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem('refresh_token');
 
     if (!refreshToken) {
-        throw new Error('No refresh token available');
+        throw new Error('Нет токена обновления');
     }
 
     try {
-        const response = await fetch(`${API_URL}/admin/api/v1/auth/refresh`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({refresh_token: refreshToken}),
+            body: JSON.stringify({
+                refresh_token: refreshToken,
+            }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to refresh token');
+            throw new Error('Ошибка обновления токена');
         }
 
         const data = await response.json();
 
         // Сохраняем новые токены
-        localStorage.setItem('accessToken', data.access_token);
-        localStorage.setItem('refreshToken', data.refresh_token);
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('tokenTimestamp', Date.now().toString());
 
     } catch (error) {
         console.error('Error refreshing token:', error);
         // Удаляем токены при ошибке обновления
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('tokenTimestamp');
         throw error;
     }
@@ -78,7 +80,7 @@ export const refreshTokens = async (): Promise<void> => {
  * @returns Promise<string> - актуальный access token
  */
 export const getAccessToken = async (): Promise<string> => {
-    let accessToken = localStorage.getItem('accessToken');
+    let accessToken = localStorage.getItem('access_token');
 
     if (!accessToken) {
         throw new Error('No access token available');
@@ -86,7 +88,7 @@ export const getAccessToken = async (): Promise<string> => {
 
     if (isTokenExpired(accessToken)) {
         await refreshTokens();
-        accessToken = localStorage.getItem('accessToken');
+        accessToken = localStorage.getItem('access_token');
 
         if (!accessToken) {
             throw new Error('Failed to get access token');
@@ -101,14 +103,14 @@ export const getAccessToken = async (): Promise<string> => {
  * @returns Promise<void>
  */
 export const logout = async (): Promise<void> => {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem('refresh_token');
 
     if (refreshToken) {
         try {
             const accessToken = await getAccessToken();
 
             // Отправляем запрос на логаут
-            await fetch(`${API_URL}/admin/api/v1/auth/logout`, {
+            await fetch(`${getApiBaseUrl()}/api/v1/auth/logout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -122,7 +124,38 @@ export const logout = async (): Promise<void> => {
     }
 
     // Удаляем токены в любом случае
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('tokenTimestamp');
+};
+
+/**
+ * Выполняет авторизацию администратора
+ * @param username Имя пользователя
+ * @param password Пароль
+ * @returns Токены доступа и обновления
+ */
+export const loginAdmin = async (username: string, password: string) => {
+    const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/admin/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username,
+            password,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Ошибка авторизации');
+    }
+
+    const data = await response.json();
+    
+    // Сохраняем токены в локальном хранилище
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('refresh_token', data.refresh_token);
+    
+    return data;
 };

@@ -15,6 +15,7 @@ class ApartmentAdminBase(BaseModel):
     active: bool = True
 
     @validator('title')
+    @classmethod
     def title_must_not_contain_html(cls, v):
         """Проверяет, что заголовок не содержит HTML-теги."""
         if '<' in v or '>' in v:
@@ -22,6 +23,7 @@ class ApartmentAdminBase(BaseModel):
         return v
 
     @validator('price_rub')
+    @classmethod
     def price_must_be_multiple_of_50(cls, v):
         """Проверяет, что цена кратна 50."""
         if v % 50 != 0:
@@ -46,6 +48,7 @@ class ApartmentAdminUpdate(BaseModel):
     active: Optional[bool] = None
 
     @validator('title')
+    @classmethod
     def title_must_not_contain_html(cls, v):
         """Проверяет, что заголовок не содержит HTML-теги."""
         if v is not None and ('<' in v or '>' in v):
@@ -53,6 +56,7 @@ class ApartmentAdminUpdate(BaseModel):
         return v
 
     @validator('price_rub')
+    @classmethod
     def price_must_be_multiple_of_50(cls, v):
         """Проверяет, что цена кратна 50."""
         if v is not None and v % 50 != 0:
@@ -93,3 +97,4 @@ class ApartmentAdminListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+

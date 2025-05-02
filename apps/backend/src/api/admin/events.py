@@ -40,16 +40,18 @@ async def get_event_log(
     - **end_date**: Фильтр по конечной дате
     """
     try:
+        # Вычисляем offset из page и page_size
+        offset = (page - 1) * page_size
+        limit = page_size
+
         # Получаем события с применением фильтров
         events, total = await get_events(
             db=db,
-            page=page,
-            page_size=page_size,
-            user_id=user_id,
-            event_type=event_type,
             entity_type=entity_type,
-            start_date=start_date,
-            end_date=end_date
+            event_type=event_type,
+            user_id=user_id,
+            limit=limit,
+            offset=offset
         )
 
         # Подготавливаем список событий для ответа
@@ -169,3 +171,4 @@ async def get_events_summary(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка получения статистики событий: {str(e)}"
         )
+

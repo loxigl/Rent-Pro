@@ -13,6 +13,7 @@ from src.services.auth import (
 )
 from src.middleware.auth import get_current_active_user
 from src.services.event_log_service import log_event
+from src.models.event_log import EntityType, EventType
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)

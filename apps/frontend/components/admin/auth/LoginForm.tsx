@@ -3,109 +3,90 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { loginAdmin } from '@/lib/utils/admin/jwt';
 
 interface LoginFormProps {
     onSuccess?: () => void;
 }
 
-const LoginForm = ({ onSuccess }: LoginFormProps) => {
-    const router = useRouter();
-    const [email, setEmail] = useState('');
+export default function LoginForm({ onSuccess }: LoginFormProps) {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
+        setError('');
         setIsLoading(true);
 
         try {
-            // Выполняем запрос на аутентификацию
-            const response = await fetch(`${API_URL}/admin/api/v1/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || 'Не удалось выполнить вход');
-            }
-
-            // Сохраняем токены в localStorage
-            localStorage.setItem('accessToken', data.access_token);
-            localStorage.setItem('refreshToken', data.refresh_token);
-            localStorage.setItem('tokenTimestamp', Date.now().toString());
-
-            // Вызываем колбэк успешного входа
+            // Используем функцию loginAdmin из утилит JWT
+            await loginAdmin(username, password);
+            
             if (onSuccess) {
                 onSuccess();
             } else {
-                // По умолчанию перенаправляем на dashboard
-                router.push('/admin');
+                router.push('/admin/dashboard');
             }
-        } catch (err: any) {
-            setError(err.message || 'Произошла ошибка при входе');
+        } catch (err) {
+            console.error('Login error:', err);
+            setError('Неверное имя пользователя или пароль');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-            <h1 className="text-2xl font-bold mb-6 text-center">Вход в админ-панель</h1>
-
+        <div className="p-6 bg-white rounded-lg shadow-md w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-6 text-center">Вход в админ-панель</h2>
+            
             {error && (
-                <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
                     {error}
                 </div>
             )}
-
+            
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+                        Имя пользователя
                     </label>
                     <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        id="username"
+                        type="text"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         required
                     />
                 </div>
-
+                
                 <div className="mb-6">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
                         Пароль
                     </label>
                     <input
                         id="password"
                         type="password"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                         required
                     />
                 </div>
-
-                <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Вход...' : 'Войти'}
-                </Button>
+                
+                <div className="flex items-center justify-between">
+                    <Button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="w-full"
+                    >
+                        {isLoading ? 'Вход...' : 'Войти'}
+                    </Button>
+                </div>
             </form>
         </div>
     );
-};
-
-export default LoginForm;
+}

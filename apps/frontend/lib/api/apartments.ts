@@ -46,8 +46,7 @@ export interface GetApartmentsParams {
 }
 
 // Исправляем потенциальное дублирование /api
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-const API_URL = API_BASE.endsWith('/api/v1') ? API_BASE : `${API_BASE}/api/v1`;
+import { getApiUrl } from './config';
 
 /**
  * Получение списка квартир с пагинацией и сортировкой
@@ -78,7 +77,7 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
     });
 
     try {
-        const response = await fetch(`${API_URL}/apartments?${searchParams.toString()}`);
+        const response = await fetch(getApiUrl(`/apartments?${searchParams.toString()}`));
 
         if (!response.ok) {
             throw new Error(`Failed to fetch apartments: ${response.status}, url: ${response.url}`);
@@ -120,7 +119,7 @@ export async function getApartmentById(id: number): Promise<ApartmentDetail> {
     }
 
     try {
-        const response = await fetch(`${API_URL}/apartments/${id}`);
+        const response = await fetch(getApiUrl(`/apartments/${id}`));
 
         if (!response.ok) {
             throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}, url: ${response.url}`);
@@ -158,7 +157,7 @@ export async function uploadApartmentPhoto(
     formData.append('apartment_id', apartmentId.toString());
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/admin/upload`, {
+    const response = await fetch(getApiUrl('/admin/upload'), {
         method: 'POST',
         body: formData,
     });

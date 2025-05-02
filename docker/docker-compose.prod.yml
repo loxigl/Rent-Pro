@@ -38,6 +38,8 @@ services:
       context: ../apps/backend
       dockerfile: Dockerfile
     restart: always
+    volumes:
+      - ../apps/backend/alembic:/app/alembic
     depends_on:
       - db
       - minio
@@ -90,6 +92,8 @@ services:
     depends_on:
       - redis
       - backend
+    volumes:
+      - ../apps/backend/alembic:/app/alembic
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}

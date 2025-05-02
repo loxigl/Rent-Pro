@@ -2,7 +2,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 import logging
 
-from src.models.auth import RolePermission, OWNER_PERMISSIONS, MANAGER_PERMISSIONS
+from src.models.auth import OWNER_PERMISSIONS, MANAGER_PERMISSIONS
+from src.models.auth.role import RolePermissionModel
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def get_user_permissions(db: Session, role: str) -> List[str]:
         if role not in ['owner', 'manager']:
             return []
 
-        permissions = db.query(RolePermission.perm).filter(RolePermission.role == role).all()
+        permissions = db.query(RolePermissionModel.perm).filter(RolePermissionModel.role == role).all()
         return [perm[0] for perm in permissions]
     except Exception as e:
         logger.error(f"Error getting permissions for role {role}: {e}")
@@ -104,7 +105,7 @@ def load_permissions_to_cache(db: Session) -> dict:
     """
     try:
         # Получаем все разрешения из БД
-        role_permissions = db.query(RolePermission).all()
+        role_permissions = db.query(RolePermissionModel).all()
 
         # Формируем словарь {role: [permissions]}
         permissions_cache = {}

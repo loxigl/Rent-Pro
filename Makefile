@@ -122,25 +122,25 @@ rebuild-backend:
 MIGRATION_NAME ?= migration_$(shell date +"%Y%m%d_%H%M%S")
 
 makemigrations:
-	docker-compose exec backend alembic revision --autogenerate -m "$(MIGRATION_NAME)"
+	docker-compose -f $(DOCKER_COMPOSE_PROD) exec backend alembic revision --autogenerate -m "$(MIGRATION_NAME)"
 
 migrate:
-	docker-compose exec backend alembic upgrade head
+	docker-compose -f $(DOCKER_COMPOSE_PROD) exec backend alembic upgrade head
 
 downgrade:
-	docker-compose exec backend alembic downgrade -1
+	docker-compose -f $(DOCKER_COMPOSE_PROD) exec backend alembic downgrade -1
 
 show_migrations:
-	docker-compose exec backend alembic history --verbose
+	docker-compose -f $(DOCKER_COMPOSE_PROD) exec backend alembic history --verbose
 
 # Работа с базой данных
 reset-db:
-	docker-compose down -v
-	docker-compose up -d db
+	docker-compose -f $(DOCKER_COMPOSE_PROD) down -v
+	docker-compose -f $(DOCKER_COMPOSE_PROD) up -d db
 	sleep 5
 	make migrate
 
 seed-db:
-	docker-compose exec backend python -m scripts.seed_data
+	docker-compose -f $(DOCKER_COMPOSE_PROD) exec backend python -m scripts.seed_data
 # Значение по умолчанию
 default: help

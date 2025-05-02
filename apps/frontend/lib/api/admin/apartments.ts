@@ -3,8 +3,7 @@
  */
 
 import {getAccessToken} from '@/lib/utils/admin/jwt';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import {getApiBaseUrl, getApiUrl} from '@/lib/api/config';
 
 // Интерфейс для создания квартиры
 export interface ApartmentCreate {
