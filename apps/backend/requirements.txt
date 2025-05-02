@@ -48,3 +48,5 @@ python-multipart==0.0.9
 
 pydantic[email]
 tenacity
+
+docs
