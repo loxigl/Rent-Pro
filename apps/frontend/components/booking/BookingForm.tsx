@@ -94,7 +94,7 @@ export default function BookingForm({ apartmentId, isOpen, onClose, price, booki
         toast({
           title: 'Даты недоступны',
           description: 'Выбранные даты уже забронированы. Пожалуйста, выберите другие даты.',
-          variant: 'destructive',
+          variant: 'error',
         });
       }
     } catch (error) {
@@ -111,7 +111,7 @@ export default function BookingForm({ apartmentId, isOpen, onClose, price, booki
       toast({
         title: 'Бронирование недоступно',
         description: 'В данный момент бронирование этой квартиры недоступно.',
-        variant: 'destructive',
+        variant: 'error',
       });
       return;
     }
@@ -125,7 +125,7 @@ export default function BookingForm({ apartmentId, isOpen, onClose, price, booki
         toast({
           title: 'Даты недоступны',
           description: 'Выбранные даты уже забронированы. Пожалуйста, выберите другие даты.',
-          variant: 'destructive',
+          variant: 'error',
         });
         setIsSubmitting(false);
         return;
@@ -151,7 +151,7 @@ export default function BookingForm({ apartmentId, isOpen, onClose, price, booki
       toast({
         title: 'Ошибка бронирования',
         description: 'Произошла ошибка при отправке запроса. Пожалуйста, попробуйте позже.',
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setIsSubmitting(false);

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
+const { toast } = useToast();
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -53,7 +54,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
       toast({
         title: 'Ошибка',
         description: 'Не удалось обновить информацию о бронировании',
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setIsSubmitting(false);
@@ -63,9 +64,9 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
   // Обработка изменения статуса
   const handleStatusChange = async (status: BookingStatus) => {
     try {
-      await updateBookingStatus(booking.id, { 
-        status, 
-        admin_comment: formData.admin_comment 
+      await updateBookingStatus(booking.id, {
+        status,
+        admin_comment: formData.admin_comment
       });
       toast({
         title: 'Статус обновлен',
@@ -77,7 +78,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
       toast({
         title: 'Ошибка',
         description: 'Не удалось обновить статус бронирования',
-        variant: 'destructive',
+        variant: 'error',
       });
     }
   };
@@ -134,7 +135,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                   <p><strong>Название:</strong> {booking.apartment.title}</p>
                 )}
               </div>
-              
+
               <div className="flex gap-2 items-center text-slate-700">
                 <Calendar className="h-4 w-4" />
                 <span className="font-medium">Даты проживания</span>
@@ -145,7 +146,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                 <p><strong>Гостей:</strong> {booking.guests_count}</p>
               </div>
             </div>
-            
+
             {isEditing ? (
               // Форма редактирования
               <div className="space-y-4">
@@ -153,7 +154,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                   <User className="h-4 w-4" />
                   <span className="font-medium">Информация о клиенте</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <Label htmlFor="client_name">Имя</Label>
@@ -164,7 +165,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <Label htmlFor="client_phone">Телефон</Label>
                     <Input
@@ -174,7 +175,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <Label htmlFor="client_email">Email</Label>
                     <Input
@@ -212,14 +213,14 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
               </div>
             )}
           </div>
-          
+
           {/* Комментарии */}
           <div className="space-y-4 mt-4">
             <div className="flex gap-2 items-center text-slate-700">
               <MessageSquare className="h-4 w-4" />
               <span className="font-medium">Комментарии</span>
             </div>
-            
+
             {isEditing ? (
               <div className="space-y-3">
                 <div className="space-y-1">
@@ -232,7 +233,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="space-y-1">
                   <Label htmlFor="admin_comment">Комментарий администратора</Label>
                   <Textarea
@@ -252,7 +253,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                     {booking.client_comment || "Нет комментария"}
                   </p>
                 </div>
-                
+
                 <div>
                   <h4 className="text-sm font-medium mb-1">Комментарий администратора:</h4>
                   <p className="text-sm text-slate-600 pl-3 border-l-2 border-slate-200">
@@ -263,7 +264,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
             )}
           </div>
         </div>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           {isEditing ? (
             <>
@@ -289,7 +290,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                 >
                   Редактировать
                 </Button>
-                
+
                 <div className="space-x-2">
                   {booking.status !== 'confirmed' && (
                     <Button
@@ -300,7 +301,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                       Подтвердить
                     </Button>
                   )}
-                  
+
                   {booking.status !== 'cancelled' && (
                     <Button
                       variant="destructive"
@@ -309,7 +310,7 @@ export default function BookingDetail({ booking, onClose, onUpdate }: BookingDet
                       Отменить
                     </Button>
                   )}
-                  
+
                   {booking.status !== 'completed' && booking.status !== 'cancelled' && (
                     <Button
                       variant="default"
