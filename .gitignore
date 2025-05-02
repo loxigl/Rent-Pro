@@ -105,3 +105,10 @@ node_modules/
 # Task files
 tasks.json
 tasks/ 
+/scripts/example_prd.txt
+/scripts/task-complexity-report.json
+/.windsurfrules
+/PRD.txt
+/README-task-master.md
+/.cursor/
+/apps/backend/alembic/versions/
