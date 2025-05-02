@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 # Настройка OAuth2 для получения токена из заголовка Authorization
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/admin/api/v1/auth/login")
 
+# Определение разрешений для защищенных ресурсов
+MANAGE_APARTMENTS = ["apartments:write"]
+MANAGE_PHOTOS = ["photos:write"]
+VIEW_EVENTS = ["events:read"]
+MANAGE_USERS = ["users:write"]
+MANAGE_BOOKINGS = ["bookings:write"]
+MANAGE_SETTINGS = ["settings:write"]
 
 async def get_current_user(
         token: str = Depends(oauth2_scheme),

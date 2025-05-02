@@ -1,7 +1,6 @@
 import os
 from typing import List, Tuple
-
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings, Field
 
 
 class Settings(BaseSettings):
@@ -30,7 +29,7 @@ class Settings(BaseSettings):
 
     # Параметры приложения
     API_PREFIX: str = "/api/v1"
-    DEBUG: bool = True
+    DEBUG: bool = Field(False, env="DEBUG")
     PROJECT_NAME: str = "AvitoRentPro"
 
     # Параметры для обработки изображений
@@ -52,8 +51,39 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
 
+    # Настройки JWT
+    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Настройки загрузки файлов
+    STATIC_DIR: str = "static"
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5 MB
+    ALLOWED_IMAGE_TYPES: list = ["image/jpeg", "image/png", "image/webp"]
+
+    # Настройки отправки email
+    SMTP_ENABLED: bool = Field(False, env="SMTP_ENABLED")
+    SMTP_SERVER: str = Field("smtp.gmail.com", env="SMTP_SERVER")
+    SMTP_PORT: int = Field(587, env="SMTP_PORT")
+    SMTP_USE_TLS: bool = Field(True, env="SMTP_USE_TLS")
+    SMTP_USERNAME: str = Field("", env="SMTP_USERNAME")
+    SMTP_PASSWORD: str = Field("", env="SMTP_PASSWORD")
+    SMTP_FROM_EMAIL: str = Field("noreply@avitorentpro.ru", env="SMTP_FROM_EMAIL")
+
+    # Контактная информация
+    SUPPORT_PHONE: str = Field("+7 (928) 123-45-67", env="SUPPORT_PHONE")
+    SUPPORT_EMAIL: str = Field("support@avitorentpro.ru", env="SUPPORT_EMAIL")
+    ADMIN_EMAIL: str = Field("admin@avitorentpro.ru", env="ADMIN_EMAIL")
+
+    # URL сайта и админ-панели
+    SITE_URL: str = Field("https://kvartiry26.ru", env="SITE_URL")
+    ADMIN_URL: str = Field("https://admin.kvartiry26.ru", env="ADMIN_URL")
+
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = True
 
 
 # Создаем экземпляр настроек

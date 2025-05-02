@@ -19,15 +19,20 @@ class Apartment(Base):
     address = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     active = Column(Boolean, default=True, nullable=False)
+    booking_enabled = Column(Boolean, default=True, nullable=False)  # Новое поле для управления бронированием
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Отношение один-ко-многим с фотографиями
     photos = relationship("ApartmentPhoto", back_populates="apartment", cascade="all, delete-orphan")
+    
+    # Отношение один-ко-многим с бронированиями
+    bookings = relationship("Booking", back_populates="apartment", cascade="all, delete-orphan")
 
     # Создание индекса для активных квартир
     __table_args__ = (
         Index('idx_apartment_active', active, postgresql_where=active.is_(True)),
+        Index('idx_apartment_booking', booking_enabled, postgresql_where=booking_enabled.is_(True)),
     )
 
 
@@ -47,6 +52,5 @@ class ApartmentPhoto(Base):
 
     # Уникальное ограничение для сортировки фото
     __table_args__ = (
-        UniqueConstraint('apartment_id', 'sort_order', name='uq_ap_photo_sort'),
         UniqueConstraint('apartment_id', 'sort_order', name='uq_ap_photo_sort'),
     )

@@ -1,11 +1,17 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.gzip import GZipMiddleware
 import logging
 import time
 import uvicorn
 from os import path
 import sys
+import os
+from fastapi.staticfiles import StaticFiles
+from docs import setup_docs
 
 # Добавляем путь к директории src в PYTHONPATH
 sys.path.append(path.dirname(path.abspath(__file__)))
@@ -14,6 +20,11 @@ from src.config.settings import settings
 from src.db.database import engine, Base
 from src.models.auth import initialize_permissions
 from src.db.database import SessionLocal
+from src.api import (
+    auth_router, apartment_router, image_router, 
+    bookings_router, admin_router, settings_router
+)
+from src.db.database import create_tables
 
 # Настройка логгера
 logging.basicConfig(
@@ -24,39 +35,56 @@ logging.basicConfig(
 logger = logging.getLogger("api")
 
 # Создание FastAPI приложения
-app = FastAPI()
-app1 = FastAPI(
+app = FastAPI(
     title="AvitoRentPro API",
-    description="API для сервиса аренды квартир AvitoRentPro",
-    version="0.2.0",
+    description="API для сервиса аренды квартир",
+    version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
 )
 
 # Настройка CORS
-origins = [
-    "http://localhost:3000",  # Frontend dev
-    "http://localhost:8000",  # Backend dev
-    "https://kvartiry26.ru",  # Frontend prod
-    "https://admin.kvartiry26.ru"  # Admin panel prod
-]
-
-app1.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # В продакшене следует указать конкретные домены
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Добавление Gzip сжатия
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Обработка ошибок валидации
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+    )
+
+# Регистрация маршрутов
+app.include_router(auth_router)
+app.include_router(apartment_router)
+app.include_router(image_router)
+app.include_router(bookings_router)
+app.include_router(settings_router)
+app.include_router(admin_router)
+
+# Настройка статических файлов
+static_dir = os.path.join(os.getcwd(), settings.STATIC_DIR)
+os.makedirs(static_dir, exist_ok=True)
+
+upload_dir = os.path.join(static_dir, settings.UPLOAD_DIR)
+os.makedirs(upload_dir, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Настройка документации
+setup_docs(app)
 
 # Middleware для логирования запросов
-@app1.middleware("http")
+@app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
 
@@ -72,30 +100,12 @@ async def log_requests(request: Request, call_next):
 
 
 # Обработчик для 404 ошибки
-@app1.exception_handler(404)
+@app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc):
     return JSONResponse(
         status_code=404,
         content={"detail": "Запрашиваемый ресурс не найден"}
     )
-
-
-# Подключение публичных API-роутеров
-from src.api.apartments import router as apartments_router
-
-app1.include_router(apartments_router, prefix=settings.API_PREFIX)
-
-# Подключение API-роутеров для админ-панели
-from src.api.admin import admin_router
-
-app1.include_router(admin_router)
-
-
-# Корневой эндпоинт
-@app1.get("/")
-async def root():
-    return {"message": "AvitoRentPro API v0.2.0"}
-
 
 # Инициализация при запуске приложения
 @app.on_event("startup")
@@ -113,8 +123,11 @@ async def startup_event():
     finally:
         db.close()
 
+    await create_tables()
 
-app.mount('/api', app1)
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 # Точка входа для запуска через uvicorn
 if __name__ == "__main__":

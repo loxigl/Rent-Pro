@@ -32,6 +32,7 @@ export interface ApartmentDetail {
     address: string;
     description: string;
     active: boolean;
+    booking_enabled: boolean;
     photos: string[];
     created_at: string;
 }
@@ -112,6 +113,7 @@ export async function getApartmentById(id: number): Promise<ApartmentDetail> {
             address: "г. Невинномысск",
             description: "Временное описание для статической сборки",
             active: true,
+            booking_enabled: true,
             photos: [],
             created_at: new Date().toISOString()
         };
@@ -138,6 +140,7 @@ export async function getApartmentById(id: number): Promise<ApartmentDetail> {
             address: "Адрес недоступен",
             description: "Не удалось загрузить данные",
             active: false,
+            booking_enabled: false,
             photos: [],
             created_at: new Date().toISOString()
         };

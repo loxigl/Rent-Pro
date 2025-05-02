@@ -20,6 +20,11 @@ class EventLog(Base):
     - photo_uploaded - загрузка фотографии
     - photo_deleted - удаление фотографии
     - photo_updated - изменение порядка/обложки фотографии
+    - booking_created - создание бронирования
+    - booking_updated - изменение бронирования
+    - booking_deleted - удаление бронирования
+    - booking_status_changed - изменение статуса бронирования
+    - settings_updated - изменение настроек системы
     """
     __tablename__ = "event_log"
 
@@ -41,14 +46,34 @@ class EventLog(Base):
 
 # Константы для типов событий
 class EventType:
+    # Пользователи
     USER_LOGIN = "user_login"
     USER_LOGOUT = "user_logout"
+    
+    # Квартиры
     APARTMENT_CREATED = "apartment_created"
     APARTMENT_UPDATED = "apartment_updated"
     APARTMENT_DELETED = "apartment_deleted"
+    
+    # Фотографии
     PHOTO_UPLOADED = "photo_uploaded"
     PHOTO_DELETED = "photo_deleted"
     PHOTO_UPDATED = "photo_updated"
+    
+    # Бронирования
+    BOOKING_CREATED = "booking_created"
+    BOOKING_UPDATED = "booking_updated"
+    BOOKING_DELETED = "booking_deleted"
+    BOOKING_STATUS_CHANGED = "booking_status_changed"
+    
+    # Настройки
+    SETTINGS_UPDATED = "settings_updated"
+    
+    # Общие события
+    CREATED = "created"
+    UPDATED = "updated"
+    DELETED = "deleted"
+    STATUS_CHANGED = "status_changed"
 
 
 # Константы для типов сущностей
@@ -56,3 +81,5 @@ class EntityType:
     APARTMENT = "apartment"
     PHOTO = "photo"
     USER = "user"
+    BOOKING = "booking"
+    SYSTEM = "system"

@@ -46,6 +46,7 @@ class ApartmentUpdate(BaseModel):
     address: Optional[str] = None
     description: Optional[str] = None
     active: Optional[bool] = None
+    booking_enabled: Optional[bool] = None
 
 
 class ApartmentInList(BaseModel):
@@ -64,8 +65,10 @@ class ApartmentInList(BaseModel):
 class ApartmentDetail(ApartmentBase):
     id: int
     active: bool
+    booking_enabled: bool
     photos: List[str] = []
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

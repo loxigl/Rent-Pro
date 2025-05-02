@@ -1,3 +1,6 @@
+import { format, parseISO } from 'date-fns';
+import { ru } from 'date-fns/locale';
+
 /**
  * Форматирует цену в рублях со знаком ₽
  */
@@ -5,6 +8,7 @@ export const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: 'RUB',
+    minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
 };
@@ -57,12 +61,14 @@ export const formatApartmentFeatures = (rooms: number, area: number, floor: numb
  * Форматирует дату в российском формате
  */
 export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  if (!dateString) return '';
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'dd.MM.yyyy', { locale: ru });
+  } catch (error) {
+    console.error('Ошибка форматирования даты:', error);
+    return '';
+  }
 };
 
 /**
@@ -86,3 +92,45 @@ export const formatPhoneUrl = (phone: string): string => {
 export const formatTelegramUrl = (username: string): string => {
   return `https://t.me/${username.replace('@', '')}`;
 };
+
+/**
+ * Форматирует дату и время в формате дд.мм.гггг, чч:мм
+ */
+export function formatDateTime(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'dd.MM.yyyy, HH:mm', { locale: ru });
+  } catch (error) {
+    console.error('Ошибка форматирования даты и времени:', error);
+    return '';
+  }
+}
+
+/**
+ * Форматирует дату в полном формате с названием дня недели и месяца
+ */
+export function formatDateFull(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'd MMMM yyyy, EEEE', { locale: ru });
+  } catch (error) {
+    console.error('Ошибка форматирования полной даты:', error);
+    return '';
+  }
+}
+
+/**
+ * Форматирует время в формате чч:мм
+ */
+export function formatTime(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'HH:mm', { locale: ru });
+  } catch (error) {
+    console.error('Ошибка форматирования времени:', error);
+    return '';
+  }
+}

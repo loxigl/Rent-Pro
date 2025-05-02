@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Отмена бронирования</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333333;
+      line-height: 1.6;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eeeeee;
+    }
+    .logo {
+      max-width: 150px;
+      height: auto;
+    }
+    .content {
+      padding: 30px 0;
+    }
+    .booking-info {
+      background-color: #f5f5f5;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .booking-info p {
+      margin: 8px 0;
+    }
+    .footer {
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
+      text-align: center;
+      color: #777777;
+      font-size: 14px;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4a6ee0;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .cta {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .contact {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .notice {
+      border-left: 4px solid #e74c3c;
+      padding-left: 15px;
+      margin: 20px 0;
+      background-color: #fef5f5;
+      padding: 15px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Отмена бронирования</h1>
+    </div>
+    
+    <div class="content">
+      <p>Здравствуйте, <strong>{{ client_name }}</strong>!</p>
+      
+      <p>Ваше бронирование <strong>#{{ booking_id }}</strong> было отменено.</p>
+      
+      <div class="notice">
+        <p>Если вы не запрашивали отмену бронирования, пожалуйста, свяжитесь с нами незамедлительно.</p>
+      </div>
+      
+      <div class="booking-info">
+        <h3>Информация о бронировании:</h3>
+        <p><strong>Квартира:</strong> {{ apartment_title }}</p>
+        <p><strong>Дата заезда:</strong> {{ check_in_date }}</p>
+        <p><strong>Дата выезда:</strong> {{ check_out_date }}</p>
+      </div>
+      
+      <p>Мы будем рады видеть вас снова в будущем. Посетите наш сайт, чтобы найти новые варианты размещения.</p>
+      
+      <div class="cta">
+        <a href="{{ site_url }}" class="button">Посмотреть другие варианты</a>
+      </div>
+      
+      <div class="contact">
+        <p>Если у вас возникли вопросы, не стесняйтесь обращаться к нам:</p>
+        <p><strong>Телефон:</strong> {{ support_phone }}</p>
+        <p><strong>Email:</strong> <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>С уважением, команда AvitoRentPro.</p>
+      <p>&copy; {{ now().year }} AvitoRentPro. Все права защищены.</p>
+    </div>
+  </div>
+</body>
+</html> 

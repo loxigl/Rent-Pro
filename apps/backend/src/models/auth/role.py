@@ -24,6 +24,10 @@ class RolePermission(Base):
     - events:read - просмотр журнала событий
     - users:read - просмотр пользователей
     - users:write - создание/редактирование пользователей
+    - bookings:read - просмотр бронирований
+    - bookings:write - управление бронированиями
+    - settings:read - просмотр настроек системы
+    - settings:write - изменение настроек системы
     """
     __tablename__ = "role_permissions"
 
@@ -52,6 +56,10 @@ OWNER_PERMISSIONS = [
     "events:read",
     "users:read",
     "users:write",
+    "bookings:read",
+    "bookings:write",
+    "settings:read",
+    "settings:write",
 ]
 
 MANAGER_PERMISSIONS = [
@@ -59,6 +67,8 @@ MANAGER_PERMISSIONS = [
     "apartments:write",
     "photos:read",
     "photos:write",
+    "bookings:read",
+    "bookings:write",
 ]
 
 

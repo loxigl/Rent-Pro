@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, asc
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, Path
+from sqlalchemy.orm import Session, AsyncSession
+from sqlalchemy import func, desc, asc, select
 from typing import Optional, List
 import logging
 
@@ -14,7 +14,8 @@ from src.schemas.admin import (
 )
 from src.middleware.auth import get_current_active_user
 from src.middleware.acl import require_apartments_read, require_apartments_write
-from src.services.event_log_service import log_event
+from src.services.event_log_service import log_event, log_action
+from src.models.role import RolePermission
 
 router = APIRouter(prefix="/apartments", tags=["admin-apartments"])
 logger = logging.getLogger(__name__)
@@ -362,3 +363,50 @@ async def delete_apartment(
     )
 
     return None
+
+
+@router.patch("/{apartment_id}/booking-toggle", response_model=dict)
+async def toggle_apartment_booking(
+    apartment_id: int = Path(..., description="ID квартиры"),
+    enable: bool = Query(True, description="Включить или отключить бронирование"),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user(required_permissions=RolePermission.MANAGE_APARTMENTS))
+):
+    """
+    Включить/отключить возможность бронирования для конкретной квартиры.
+    """
+    # Проверяем наличие квартиры
+    apartment_query = select(Apartment).where(Apartment.id == apartment_id)
+    result = await db.execute(apartment_query)
+    apartment = result.scalars().first()
+    
+    if not apartment:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Квартира с ID {apartment_id} не найдена"
+        )
+    
+    # Обновляем поле booking_enabled
+    apartment.booking_enabled = enable
+    
+    # Логируем изменение
+    action = "включена" if enable else "отключена"
+    await log_action(
+        db=db,
+        entity_type=EntityType.APARTMENT,
+        entity_id=apartment_id,
+        event_type=EventType.APARTMENT_UPDATED,
+        description=f"Возможность бронирования для квартиры #{apartment_id} {action} пользователем {current_user.get('username')}",
+        user_id=current_user.get('id'),
+        ip_address=None,
+        user_agent=None,
+        payload={"booking_enabled": enable}
+    )
+    
+    await db.commit()
+    
+    return {
+        "apartment_id": apartment_id,
+        "booking_enabled": enable,
+        "message": f"Возможность бронирования для квартиры {apartment_id} успешно {'включена' if enable else 'отключена'}"
+    }

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Новое бронирование</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333333;
+      line-height: 1.6;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eeeeee;
+    }
+    .content {
+      padding: 30px 0;
+    }
+    .booking-info {
+      background-color: #f5f5f5;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .booking-info p {
+      margin: 8px 0;
+    }
+    .client-info {
+      background-color: #eaf0f7;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .client-info p {
+      margin: 8px 0;
+    }
+    .footer {
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
+      text-align: center;
+      color: #777777;
+      font-size: 14px;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4a6ee0;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .cta {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .highlight {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Новое бронирование!</h1>
+    </div>
+    
+    <div class="content">
+      <p class="highlight">Получено новое бронирование №{{ booking_id }}.</p>
+      
+      <div class="booking-info">
+        <h3>Информация о бронировании:</h3>
+        <p><strong>Квартира:</strong> {{ apartment_title }}</p>
+        <p><strong>Дата заезда:</strong> {{ check_in_date }}</p>
+        <p><strong>Дата выезда:</strong> {{ check_out_date }}</p>
+        <p><strong>Количество гостей:</strong> {{ guests_count }}</p>
+      </div>
+      
+      <div class="client-info">
+        <h3>Информация о клиенте:</h3>
+        <p><strong>Имя:</strong> {{ client_name }}</p>
+        <p><strong>Телефон:</strong> {{ client_phone }}</p>
+        {% if client_email %}
+          <p><strong>Email:</strong> {{ client_email }}</p>
+        {% else %}
+          <p><strong>Email:</strong> <em>Не указан</em></p>
+        {% endif %}
+      </div>
+      
+      <p>Бронирование находится в статусе "Ожидает подтверждения" и требует вашего рассмотрения.</p>
+      
+      <div class="cta">
+        <a href="{{ admin_url }}" class="button">Перейти в админ-панель</a>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Это автоматическое уведомление, пожалуйста, не отвечайте на него.</p>
+      <p>&copy; {{ now().year }} AvitoRentPro. Все права защищены.</p>
+    </div>
+  </div>
+</body>
+</html> 
