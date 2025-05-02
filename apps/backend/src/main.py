@@ -11,7 +11,6 @@ from os import path
 import sys
 import os
 from fastapi.staticfiles import StaticFiles
-from docs import setup_docs
 
 # Добавляем путь к директории src в PYTHONPATH
 sys.path.append(path.dirname(path.abspath(__file__)))
@@ -21,10 +20,9 @@ from src.db.database import engine, Base
 from src.models.auth import initialize_permissions
 from src.db.database import SessionLocal
 from src.api import (
-    auth_router, apartment_router, image_router, 
+    auth_router, apartment_router, image_router,
     bookings_router, admin_router, settings_router
 )
-from src.db.database import create_tables
 
 # Настройка логгера
 logging.basicConfig(
@@ -55,6 +53,7 @@ app.add_middleware(
 # Добавление Gzip сжатия
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+
 # Обработка ошибок валидации
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -62,6 +61,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
     )
+
 
 # Регистрация маршрутов
 app.include_router(auth_router)
@@ -80,8 +80,6 @@ os.makedirs(upload_dir, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Настройка документации
-setup_docs(app)
 
 # Middleware для логирования запросов
 @app.middleware("http")
@@ -107,6 +105,7 @@ async def not_found_exception_handler(request: Request, exc):
         content={"detail": "Запрашиваемый ресурс не найден"}
     )
 
+
 # Инициализация при запуске приложения
 @app.on_event("startup")
 async def startup_event():
@@ -123,11 +122,11 @@ async def startup_event():
     finally:
         db.close()
 
-    await create_tables()
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
 
 # Точка входа для запуска через uvicorn
 if __name__ == "__main__":
