@@ -1,7 +1,7 @@
 "use client";
 
 import {useState, useEffect} from 'react';
-import {Button} from '@/components/ui/Button';
+import {Button} from '@/components/ui/button';
 import {getEvents, EventLogItem, EventType, EntityType} from '@/lib/api/admin/events';
 
 interface EventLogTableProps {

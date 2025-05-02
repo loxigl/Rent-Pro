@@ -1,7 +1,7 @@
 "use client";
 
 import {useState, useRef} from 'react';
-import {Button} from '@/components/ui/Button';
+import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

@@ -3,7 +3,7 @@
 import {useState, useEffect} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {Button} from '@/components/ui/Button';
+import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
