@@ -112,3 +112,4 @@ tasks/
 /README-task-master.md
 /.cursor/
 /apps/backend/alembic/versions/
+/docker/init-letsencrypt.sh
