@@ -13,7 +13,7 @@ from src.schemas import (
     SystemSettingsResponse, BookingGlobalToggle
 )
 from src.models.event_log import EventType, EntityType
-from src.utils.logging import log_action
+from src.services.event_log_service import log_action
 from src.middleware.auth import get_current_active_user, check_permissions
 from src.models.auth.role import RolePermission
 from src.services.email_service import send_booking_confirmation, send_booking_cancellation

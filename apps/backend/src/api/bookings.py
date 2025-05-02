@@ -8,7 +8,7 @@ from sqlalchemy import and_, func
 from src.db.database import get_db
 from src.models import Booking, Apartment, SystemSettings
 from src.schemas import BookingCreate, BookingResponse, BookingListResponse
-from src.utils.logging import log_action
+from src.services.event_log_service import log_action
 from src.models.event_log import EventType, EntityType
 from src.services.email_service import send_booking_created_notification
 
