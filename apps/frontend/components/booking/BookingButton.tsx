@@ -79,6 +79,7 @@ const BookingButton = ({ apartmentId, price, bookingEnabled }: BookingButtonProp
           price={price} 
           isOpen={isFormOpen} 
           onClose={toggleForm} 
+          bookingEnabled={bookingEnabled}
         />
       )}
     </>

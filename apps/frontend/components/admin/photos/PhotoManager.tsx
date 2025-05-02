@@ -3,7 +3,7 @@
 import {useState, useEffect} from 'react';
 import PhotoUploader from '@/components/admin/photos/PhotoUploader';
 import SortablePhotoList from '@/components/admin/photos/SortablePhotoList';
-import {Button} from '@/components/ui/Button';
+import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
 
 // Интерфейс для фотографии

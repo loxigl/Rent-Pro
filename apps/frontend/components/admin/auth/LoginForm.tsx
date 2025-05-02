@@ -1,8 +1,8 @@
 "use client";
 
-import {useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {Button} from '@/components/ui/Button';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -10,7 +10,7 @@ interface LoginFormProps {
     onSuccess?: () => void;
 }
 
-const LoginForm = ({onSuccess}: LoginFormProps) => {
+const LoginForm = ({ onSuccess }: LoginFormProps) => {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,7 +29,7 @@ const LoginForm = ({onSuccess}: LoginFormProps) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({email, password}),
+                body: JSON.stringify({ email, password }),
             });
 
             const data = await response.json();
@@ -98,7 +98,7 @@ const LoginForm = ({onSuccess}: LoginFormProps) => {
 
                 <Button
                     type="submit"
-                    fullWidth
+                    className="w-full"
                     disabled={isLoading}
                 >
                     {isLoading ? 'Вход...' : 'Войти'}

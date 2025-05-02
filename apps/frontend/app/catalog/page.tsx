@@ -2,7 +2,7 @@ import {Metadata} from "next";
 import Link from "next/link";
 import {getApartments} from "@/lib/api/apartments";
 import ApartmentCard, {ApartmentCardSkeleton} from "@/components/apartments/ApartmentCard";
-import {Button} from "@/components/ui/Button";
+import {Button} from "@/components/ui/button";
 import {Suspense} from "react";
 export const dynamic = 'force-dynamic';
 
