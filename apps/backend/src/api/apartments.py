@@ -11,6 +11,7 @@ from src.config.settings import settings
 from src.services.minio_service import MinioService
 from src.services.apartment_service import ApartmentService
 from src.services.image_service import ImageSize, ImageFormat
+from src.services.image_format_service import ImageFormatService
 from src.services.cache_service import CacheService
 from src.celery_worker import process_image
 
@@ -206,11 +207,13 @@ async def upload_photo(
     if not apartment:
         raise HTTPException(status_code=404, detail="Квартира не найдена")
 
-    # Проверяем формат файла
-    if file.content_type not in ["image/jpeg", "image/png"]:
+    # Проверяем формат файла с использованием нового сервиса
+    if not ImageFormatService.is_supported_format(file.content_type):
+        supported_formats = ImageFormatService.get_supported_formats()
         raise HTTPException(
             status_code=400,
-            detail="Поддерживаются только JPEG и PNG изображения"
+            detail=f"Неподдерживаемый формат файла: {file.content_type}. "
+                   f"Поддерживаются: {', '.join(supported_formats)}"
         )
 
     try:
@@ -224,8 +227,29 @@ async def upload_photo(
                 detail=f"Размер файла превышает {settings.MAX_IMAGE_SIZE_MB} МБ"
             )
 
+        # Дополнительная валидация изображения
+        if not ImageFormatService.validate_image_content(file_content, settings.MAX_IMAGE_SIZE_MB):
+            raise HTTPException(
+                status_code=400,
+                detail="Файл поврежден или не является валидным изображением"
+            )
+
+        # Определяем реальный формат файла (может отличаться от content_type)
+        detected_format = ImageFormatService.detect_format_from_content(file_content)
+        actual_format = detected_format or file.content_type
+        
+        # Конвертируем в поддерживаемый формат если нужно
+        original_content_type = actual_format
+        if actual_format not in ["image/jpeg", "image/png", "image/webp"]:
+            file_content, actual_format = ImageFormatService.convert_to_supported_format(
+                file_content, actual_format
+            )
+
         # Запускаем задачу Celery для обработки изображения
         cover_url = process_image.delay(file_content, apartment_id).get()
+
+        # Получаем информацию об изображении
+        image_info = ImageFormatService.get_image_info(file_content)
 
         # Добавляем фотографию к квартире
         new_photo = ApartmentService.add_apartment_photo(
@@ -234,7 +258,12 @@ async def upload_photo(
             cover_url,
             metadata={
                 "original_filename": file.filename,
-                "content_type": file.content_type,
+                "original_content_type": file.content_type,
+                "detected_content_type": detected_format,
+                "processed_content_type": actual_format,  
+                "was_converted": original_content_type != actual_format,
+                "original_format": original_content_type,
+                "image_info": image_info,
                 "upload_timestamp": datetime.now().isoformat()
             }
         )

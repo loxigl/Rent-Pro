@@ -3,9 +3,8 @@
 import {useState, useRef} from 'react';
 import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
-import {getApiBaseUrl} from '@/lib/api/config';
 
-const API_URL = getApiBaseUrl();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Интерфейс для загруженной фотографии
 interface UploadedPhoto {
@@ -43,8 +42,12 @@ export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploa
 
     // Максимальный размер файла (10 МБ)
     const MAX_FILE_SIZE = 10 * 1024 * 1024;
-    // Допустимые типы файлов
-    const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    // Допустимые типы файлов - поддерживаем все современные форматы
+    const ACCEPTED_FILE_TYPES = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+        'image/heic', 'image/heif', 'image/avif', 
+        'image/tiff', 'image/tif', 'image/bmp', 'image/gif'
+    ];
 
     // Обработчик выбора файлов
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +67,7 @@ export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploa
             }
 
             if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-                setError(`Файл "${file.name}" имеет недопустимый формат. Допустимые форматы: JPEG, PNG, WebP`);
+                setError(`Файл "${file.name}" имеет недопустимый формат. Допустимые форматы: JPEG, PNG, WebP, HEIC, HEIF, AVIF, TIFF, BMP, GIF`);
                 return false;
             }
 
@@ -164,7 +167,7 @@ export default function PhotoUploader({apartmentId, onPhotoUploaded}: PhotoUploa
             <input
                 type="file"
                 ref={fileInputRef}
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,image/avif,image/tiff,image/tif,image/bmp,image/gif"
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"

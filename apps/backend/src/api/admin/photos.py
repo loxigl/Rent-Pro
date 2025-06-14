@@ -20,6 +20,7 @@ from src.middleware.auth import get_current_active_user
 from src.middleware.acl import require_photos_read, require_photos_write
 from src.services.event_log_service import log_event
 from src.services.minio_service import MinioService
+from src.services.image_format_service import ImageFormatService
 from src.celery_worker import process_image
 
 router = APIRouter(prefix="/photos", tags=["admin-photos"])
@@ -118,12 +119,13 @@ async def upload_photo(
             detail="Квартира не найдена"
         )
 
-    # Проверяем формат файла
-    allowed_formats = ["image/jpeg", "image/png", "image/webp"]
-    if file.content_type not in allowed_formats:
+    # Проверяем формат файла с использованием нового сервиса
+    if not ImageFormatService.is_supported_format(file.content_type):
+        supported_formats = ImageFormatService.get_supported_formats()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Неподдерживаемый формат файла. Поддерживаются только: {', '.join(allowed_formats)}"
+            detail=f"Неподдерживаемый формат файла: {file.content_type}. "
+                   f"Поддерживаются: {', '.join(supported_formats)}"
         )
 
     try:
@@ -140,6 +142,30 @@ async def upload_photo(
                 detail=f"Размер файла превышает максимально допустимый ({max_size // (1024 * 1024)}MB)"
             )
 
+        # Дополнительная валидация изображения
+        if not ImageFormatService.validate_image_content(file_content, max_size // (1024 * 1024)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Файл поврежден или не является валидным изображением"
+            )
+
+        # Определяем реальный формат файла (может отличаться от content_type)
+        detected_format = ImageFormatService.detect_format_from_content(file_content)
+        actual_format = detected_format or file.content_type
+        
+        logger.info(f"Загружаем файл: {file.filename}, "
+                   f"заявленный формат: {file.content_type}, "
+                   f"реальный формат: {actual_format}")
+
+        # Конвертируем в поддерживаемый формат если нужно
+        original_content_type = actual_format
+        if actual_format not in ["image/jpeg", "image/png", "image/webp"]:
+            logger.info(f"Конвертируем {actual_format} в поддерживаемый формат")
+            file_content, actual_format = ImageFormatService.convert_to_supported_format(
+                file_content, actual_format
+            )
+            logger.info(f"Конвертация завершена: {original_content_type} -> {actual_format}")
+
         # Определяем порядок сортировки для нового фото
         max_sort_order = db.query(func.max(ApartmentPhoto.sort_order)).filter(
             ApartmentPhoto.apartment_id == apartment_id
@@ -148,12 +174,20 @@ async def upload_photo(
         # Если нет фотографий, начинаем с 0, иначе следующий порядок
         new_sort_order = 0 if max_sort_order is None else max_sort_order + 1
 
+        # Получаем информацию об изображении
+        image_info = ImageFormatService.get_image_info(file_content)
+
         # Вместо блокирующего вызова Celery:
         # 1. Создаем запись в БД с временным URL
         temp_url = f"/processing/apartment_{apartment_id}_{uuid.uuid4()}.jpg"
         photo_metadata = {
             "original_filename": file.filename,
-            "content_type": file.content_type,
+            "original_content_type": file.content_type,
+            "detected_content_type": detected_format,
+            "processed_content_type": actual_format,
+            "was_converted": original_content_type != actual_format,
+            "original_format": original_content_type,
+            "image_info": image_info,
             "is_cover": new_sort_order == 0,  # Первое фото - обложка
             "processing_status": "pending"
         }
@@ -214,7 +248,7 @@ async def upload_photo(
             asyncio.create_task(update_photo_url())
 
         # Логируем событие
-        log_event(
+        await log_event(
             db=db,
             event_type=EventType.PHOTO_UPLOADED,
             user_id=current_user.id,
@@ -310,7 +344,7 @@ async def update_photo(
     db.refresh(photo)
 
     # Логируем событие
-    log_event(
+    await log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,
         user_id=current_user.id,
@@ -379,7 +413,7 @@ async def bulk_update_photos(
     db.commit()
 
     # Логируем событие
-    log_event(
+    await log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,
         user_id=current_user.id,
@@ -442,7 +476,7 @@ async def delete_photo(
             logger.error(f"Error deleting image from MinIO: {e}")
 
     # Логируем событие
-    log_event(
+    await log_event(
         db=db,
         event_type=EventType.PHOTO_DELETED,
         user_id=current_user.id,
