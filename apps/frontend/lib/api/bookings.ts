@@ -1,4 +1,5 @@
-import { API_BASE_URL } from './config';
+import { getApiUrl } from './config';
+import { publicRoutes } from './routes';
 
 /**
  * Интерфейс для данных создания бронирования
@@ -37,26 +38,31 @@ export interface Booking {
  * Создать новое бронирование
  */
 export async function createBooking(data: CreateBookingData): Promise<Booking> {
-  const formattedData = {
-    ...data,
-    check_in_date: data.check_in_date.toISOString(),
-    check_out_date: data.check_out_date.toISOString(),
-  };
+  try {
+    const formattedData = {
+      ...data,
+      check_in_date: data.check_in_date.toISOString(),
+      check_out_date: data.check_out_date.toISOString(),
+    };
 
-  const response = await fetch(`${API_BASE_URL}/bookings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(formattedData),
-  });
+    const response = await fetch(getApiUrl(publicRoutes.bookings.create), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedData),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Ошибка при создании бронирования');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Ошибка при создании бронирования');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка при создании бронирования:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 /**
@@ -67,17 +73,23 @@ export async function checkAvailability(
   checkIn: Date, 
   checkOut: Date
 ): Promise<boolean> {
-  const params = new URLSearchParams({
-    apartment_id: apartmentId.toString(),
-    check_in: checkIn.toISOString(),
-    check_out: checkOut.toISOString(),
-  });
+  try {
+    const params = new URLSearchParams({
+      apartment_id: apartmentId.toString(),
+      check_in: checkIn.toISOString(),
+      check_out: checkOut.toISOString(),
+    });
 
-  const response = await fetch(`${API_BASE_URL}/bookings/check-availability?${params}`);
+    const response = await fetch(`${getApiUrl(publicRoutes.bookings.checkAvailability)}?${params}`);
 
-  if (!response.ok) {
-    throw new Error('Ошибка при проверке доступности дат');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ошибка при проверке доступности дат: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка при проверке доступности дат:', error);
+    throw error;
   }
-
-  return await response.json();
 } 

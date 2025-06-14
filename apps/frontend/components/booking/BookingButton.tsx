@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import BookingForm from "./BookingForm";
-import { getSystemSettings } from '@/lib/api/settings';
+import { getPublicSettings } from '@/lib/api/settings';
 
 interface BookingButtonProps {
   apartmentId: number;
@@ -21,7 +21,7 @@ const BookingButton = ({ apartmentId, price, bookingEnabled }: BookingButtonProp
   useEffect(() => {
     const checkBookingSettings = async () => {
       try {
-        const settings = await getSystemSettings();
+        const settings = await getPublicSettings();
         setGlobalBookingEnabled(settings.booking_globally_enabled);
       } catch (error) {
         console.error('Ошибка при получении настроек системы:', error);

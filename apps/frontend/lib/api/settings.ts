@@ -32,8 +32,8 @@ export async function getPublicSettings(): Promise<SystemSettings> {
     // Возвращаем настройки по умолчанию при ошибке
     return {
       booking_globally_enabled: true,
-      support_phone: '+7 (928) 123-45-67',
-      support_email: 'support@avitorentpro.ru'
+      support_phone: '+7 (123) 456-78-90',
+      support_email: 'support@example.com'
     };
   }
 } 

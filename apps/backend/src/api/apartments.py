@@ -142,7 +142,9 @@ async def get_apartment(
         description=apartment.description,
         active=apartment.active,
         photos=photo_urls,
-        created_at=apartment.created_at
+        created_at=apartment.created_at,
+        booking_enabled=apartment.booking_enabled,
+        updated_at=apartment.updated_at
     )
 
     # Сохраняем результат в кеш

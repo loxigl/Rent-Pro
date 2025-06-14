@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import Session
 
 from src.db.database import get_db
 from src.models import SystemSettings
@@ -13,13 +14,13 @@ router = APIRouter(
 
 
 @router.get("/public", response_model=SystemSettingsPublic)
-async def get_public_settings(
-        db: AsyncSession = Depends(get_db)
+def get_public_settings(
+        db: Session = Depends(get_db)
 ):
     """
     Получить публичные настройки системы.
     """
-    result = await db.execute(select(SystemSettings).limit(1))
+    result = db.execute(select(SystemSettings).limit(1))
     settings = result.scalars().first()
 
     # Если настройки не найдены, возвращаем значения по умолчанию

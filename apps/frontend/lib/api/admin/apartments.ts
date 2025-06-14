@@ -3,7 +3,9 @@
  */
 
 import {getAccessToken} from '@/lib/utils/admin/jwt';
-import {getApiBaseUrl, getApiUrl} from '@/lib/api/config';
+import {getApiUrl} from '@/lib/api/config';
+import {adminRoutes} from '@/lib/api/routes';
+import {log} from "node:util";
 
 // Интерфейс для создания квартиры
 export interface ApartmentCreate {
@@ -29,19 +31,6 @@ export interface ApartmentUpdate {
     active?: boolean;
 }
 
-// Интерфейс для квартиры в списке
-export interface ApartmentListItem {
-    id: number;
-    title: string;
-    price_rub: number;
-    rooms: number;
-    area_m2: number;
-    active: boolean;
-    photos_count: number;
-    cover_url: string | null;
-    created_at: string;
-}
-
 // Интерфейс для детальной информации о квартире
 export interface ApartmentDetail {
     id: number;
@@ -51,14 +40,27 @@ export interface ApartmentDetail {
     floor: number;
     area_m2: number;
     address: string;
-    description: string | null;
+    description?: string;
     active: boolean;
     photos_count: number;
     created_at: string;
     updated_at: string;
 }
 
-// Интерфейс для ответа со списком квартир
+// Интерфейс для элемента списка квартир
+export interface ApartmentListItem {
+    id: number;
+    title: string;
+    price_rub: number;
+    rooms: number;
+    area_m2: number;
+    active: boolean;
+    photos_count: number;
+    cover_url?: string;
+    created_at: string;
+}
+
+// Интерфейс для пагинированного списка квартир
 export interface ApartmentListResponse {
     items: ApartmentListItem[];
     total: number;
@@ -66,26 +68,30 @@ export interface ApartmentListResponse {
     page_size: number;
 }
 
-// Параметры запроса списка квартир
-export interface GetApartmentsParams {
+// Интерфейс для параметров поиска квартир
+export interface ApartmentSearchParams {
     search?: string;
     page?: number;
     page_size?: number;
-    sort?: 'created_at' | 'price_rub' | 'title';
-    order?: 'asc' | 'desc';
+    sort?: string;
+    order?: string;
     active_only?: boolean;
 }
 
 /**
- * Получение списка квартир для админ-панели
+ * Получение списка квартир для админ-панели с возможностью поиска
  */
-export async function getAdminApartments(params: GetApartmentsParams = {}): Promise<ApartmentListResponse> {
+export async function getApartments(params: ApartmentSearchParams = {}): Promise<ApartmentListResponse> {
     try {
-        // Получаем токен доступа
-        const token = await getAccessToken();
+        const token = getAccessToken();
+
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
 
         // Формируем URL с параметрами
-        const url = new URL(`${API_URL}/admin/api/v1/apartments`);
+        const url = new URL(`${getApiUrl(adminRoutes.apartments.list)}`);
+
 
         // Добавляем параметры запроса
         if (params.search) url.searchParams.append('search', params.search);
@@ -93,48 +99,61 @@ export async function getAdminApartments(params: GetApartmentsParams = {}): Prom
         if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
         if (params.sort) url.searchParams.append('sort', params.sort);
         if (params.order) url.searchParams.append('order', params.order);
-        if (params.active_only) url.searchParams.append('active_only', params.active_only.toString());
+        if (params.active_only !== undefined) url.searchParams.append('active_only', params.active_only.toString());
 
-        // Выполняем запрос
         const response = await fetch(url.toString(), {
+            method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         });
 
         if (!response.ok) {
-            throw new Error(`Error fetching apartments: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Ошибка получения списка квартир: ${response.status} ${errorText}`);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
-        console.error('Error fetching apartments:', error);
-        throw error;
+        console.error('Ошибка при получении списка квартир:', error);
+        // В случае ошибки возвращаем пустой список
+        return {
+            items: [],
+            total: 0,
+            page: 1,
+            page_size: 10
+        };
     }
 }
 
 /**
- * Получение детальной информации о квартире
+ * Получение информации о квартире по ID
  */
-export async function getAdminApartmentById(id: number): Promise<ApartmentDetail> {
+export async function getApartmentById(id: number): Promise<ApartmentDetail> {
     try {
-        // Получаем токен доступа
-        const token = await getAccessToken();
+        const token = getAccessToken();
 
-        // Выполняем запрос
-        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
+
+        const response = await fetch(getApiUrl(adminRoutes.apartments.detail(id)), {
+            method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         });
 
         if (!response.ok) {
-            throw new Error(`Error fetching apartment details: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Ошибка получения информации о квартире: ${response.status} ${errorText}`);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
-        console.error(`Error fetching apartment ${id}:`, error);
+        console.error(`Ошибка при получении информации о квартире (ID: ${id}):`, error);
         throw error;
     }
 }
@@ -142,63 +161,63 @@ export async function getAdminApartmentById(id: number): Promise<ApartmentDetail
 /**
  * Создание новой квартиры
  */
-export async function createApartment(apartmentData: ApartmentCreate): Promise<ApartmentDetail> {
+export async function createApartment(data: ApartmentCreate): Promise<ApartmentDetail> {
     try {
-        // Получаем токен доступа
-        const token = await getAccessToken();
+        const token = getAccessToken();
 
-        // Выполняем запрос
-        const response = await fetch(`${API_URL}/admin/api/v1/apartments`, {
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
+
+        const response = await fetch(getApiUrl(adminRoutes.apartments.create), {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(apartmentData)
+            body: JSON.stringify(data),
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(
-                errorData?.detail || `Error creating apartment: ${response.status}`
-            );
+            const errorText = await response.text();
+            throw new Error(`Ошибка создания квартиры: ${response.status} ${errorText}`);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
-        console.error('Error creating apartment:', error);
+        console.error('Ошибка при создании квартиры:', error);
         throw error;
     }
 }
 
 /**
- * Обновление квартиры
+ * Обновление информации о квартире
  */
-export async function updateApartment(id: number, apartmentData: ApartmentUpdate): Promise<ApartmentDetail> {
+export async function updateApartment(id: number, data: ApartmentUpdate): Promise<ApartmentDetail> {
     try {
-        // Получаем токен доступа
-        const token = await getAccessToken();
+        const token = getAccessToken();
 
-        // Выполняем запрос
-        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
+
+        const response = await fetch(getApiUrl(adminRoutes.apartments.update(id)), {
             method: 'PATCH',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(apartmentData)
+            body: JSON.stringify(data),
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(
-                errorData?.detail || `Error updating apartment: ${response.status}`
-            );
+            const errorText = await response.text();
+            throw new Error(`Ошибка обновления квартиры: ${response.status} ${errorText}`);
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
-        console.error(`Error updating apartment ${id}:`, error);
+        console.error(`Ошибка при обновлении квартиры (ID: ${id}):`, error);
         throw error;
     }
 }
@@ -208,22 +227,60 @@ export async function updateApartment(id: number, apartmentData: ApartmentUpdate
  */
 export async function deleteApartment(id: number): Promise<void> {
     try {
-        // Получаем токен доступа
-        const token = await getAccessToken();
+        const token = getAccessToken();
 
-        // Выполняем запрос
-        const response = await fetch(`${API_URL}/admin/api/v1/apartments/${id}`, {
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
+
+        const response = await fetch(getApiUrl(adminRoutes.apartments.delete(id)), {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         });
 
         if (!response.ok) {
-            throw new Error(`Error deleting apartment: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Ошибка удаления квартиры: ${response.status} ${errorText}`);
         }
     } catch (error) {
-        console.error(`Error deleting apartment ${id}:`, error);
+        console.error(`Ошибка при удалении квартиры (ID: ${id}):`, error);
+        throw error;
+    }
+}
+
+/**
+ * Включение/отключение возможности бронирования для квартиры
+ */
+export async function toggleBooking(id: number, enable: boolean): Promise<any> {
+    try {
+        const token = getAccessToken();
+
+        if (!token) {
+            throw new Error('Необходима авторизация');
+        }
+
+        const url = new URL(getApiUrl(adminRoutes.apartments.bookingToggle(id)));
+        url.searchParams.append('enable', enable.toString());
+
+        const response = await fetch(url.toString(), {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Ошибка изменения статуса бронирования: ${response.status} ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Ошибка при изменении статуса бронирования квартиры (ID: ${id}):`, error);
         throw error;
     }
 }

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, or_, desc, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, Session
 
 from src.db.database import get_db
 from src.models import Booking, BookingStatus, Apartment, SystemSettings
@@ -19,7 +19,7 @@ from src.models.auth.role import RolePermission
 from src.services.email_service import send_booking_confirmation, send_booking_cancellation
 
 router = APIRouter(
-    prefix="/api/v1/admin/bookings",
+    prefix="/bookings",
     tags=["admin", "bookings"]
 )
 
@@ -33,7 +33,7 @@ async def list_bookings(
         to_date: Optional[datetime] = None,
         skip: int = Query(0, ge=0),
         limit: int = Query(10, ge=1, le=100),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         _: dict = Depends(check_permissions(required_permissions=[RolePermission.MANAGE_BOOKINGS]))
 ):
     """
@@ -68,8 +68,8 @@ async def list_bookings(
     query = query.order_by(desc(Booking.created_at)).offset(skip).limit(limit)
 
     # Выполняем запросы
-    bookings = await db.execute(query)
-    total_count = await db.execute(count_query)
+    bookings = db.execute(query)
+    total_count = db.execute(count_query)
 
     return {
         "total": total_count.scalar(),
@@ -80,13 +80,13 @@ async def list_bookings(
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(
         booking_id: int = Path(..., description="ID бронирования"),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         _: dict = Depends(check_permissions(required_permissions=[RolePermission.MANAGE_BOOKINGS]))
 ):
     """
     Получить информацию о конкретном бронировании по ID.
     """
-    booking = await db.execute(
+    booking = db.execute(
         select(Booking)
         .options(joinedload(Booking.apartment))
         .where(Booking.id == booking_id)
@@ -106,7 +106,7 @@ async def get_booking(
 async def update_booking(
         booking_data: BookingUpdate,
         booking_id: int = Path(..., description="ID бронирования"),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         current_user: dict = Depends(check_permissions(required_permissions=[RolePermission.MANAGE_BOOKINGS]))
 ):
     """
@@ -114,7 +114,7 @@ async def update_booking(
     """
     # Находим бронирование
     booking_query = select(Booking).where(Booking.id == booking_id)
-    result = await db.execute(booking_query)
+    result = db.execute(booking_query)
     booking = result.scalars().first()
 
     if not booking:
@@ -129,20 +129,16 @@ async def update_booking(
     if update_data:
         for key, value in update_data.items():
             setattr(booking, key, value)
-
-        # Логируем изменения
-        await log_action(
-            db=db,
-            entity_type=EntityType.BOOKING,
-            entity_id=booking.id,
-            event_type=EventType.UPDATED,
-            description=f"Обновлено бронирование #{booking_id} пользователем {current_user.get('username')}",
-            user_id=current_user.get('id')
-        )
-
-        await db.commit()
-        await db.refresh(booking)
-
+    log_action(
+        db=db,
+        entity_type=EntityType.BOOKING,
+        entity_id=booking.id,
+        event_type=EventType.UPDATED,
+        description=f"Обновлено бронирование #{booking_id} пользователем {current_user.get('username')}",
+        user_id=current_user.get('id')
+    )
+    db.commit()
+    db.refresh(booking)
     return booking
 
 
@@ -150,7 +146,7 @@ async def update_booking(
 async def update_booking_status(
         status_data: BookingStatusUpdate,
         booking_id: int = Path(..., description="ID бронирования"),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         current_user: dict = Depends(check_permissions(required_permissions=[RolePermission.MANAGE_BOOKINGS]))
 ):
     """
@@ -158,7 +154,7 @@ async def update_booking_status(
     """
     # Находим бронирование с информацией о квартире
     booking_query = select(Booking).options(joinedload(Booking.apartment)).where(Booking.id == booking_id)
-    result = await db.execute(booking_query)
+    result = db.execute(booking_query)
     booking = result.scalars().first()
 
     if not booking:
@@ -180,7 +176,7 @@ async def update_booking_status(
         booking.admin_comment = status_data.admin_comment
 
     # Логируем изменение статуса
-    await log_action(
+    log_action(
         db=db,
         entity_type=EntityType.BOOKING,
         entity_id=booking.id,
@@ -193,8 +189,8 @@ async def update_booking_status(
         user_id=current_user.get('id')
     )
 
-    await db.commit()
-    await db.refresh(booking)
+    db.commit()
+    db.refresh(booking)
 
     # Отправляем уведомление по email при изменении статуса
     if booking.client_email:
@@ -227,14 +223,14 @@ async def update_booking_status(
 @router.delete("/{booking_id}", status_code=204)
 async def delete_booking(
         booking_id: int = Path(..., description="ID бронирования"),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         current_user: dict = Depends(check_permissions(required_permissions=[RolePermission.MANAGE_BOOKINGS]))
 ):
     """
     Удалить бронирование по ID.
     """
     booking_query = select(Booking).where(Booking.id == booking_id)
-    result = await db.execute(booking_query)
+    result = db.execute(booking_query)
     booking = result.scalars().first()
 
     if not booking:
@@ -244,7 +240,7 @@ async def delete_booking(
         )
 
     # Логируем удаление
-    await log_action(
+    log_action(
         db=db,
         entity_type=EntityType.BOOKING,
         entity_id=booking.id,
@@ -253,7 +249,7 @@ async def delete_booking(
         user_id=current_user.get('id')
     )
 
-    await db.delete(booking)
-    await db.commit()
+    db.delete(booking)
+    db.commit()
 
     return None

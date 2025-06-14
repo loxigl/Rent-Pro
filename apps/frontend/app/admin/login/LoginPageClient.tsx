@@ -3,13 +3,14 @@
 import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import LoginForm from '@/components/admin/auth/LoginForm';
+import {getAccessToken, getRefreshToken} from '@/lib/utils/admin/jwt';
 
 export default function LoginPageClient() {
     const router = useRouter();
 
     useEffect(() => {
-        const accessToken = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
+        const accessToken = getAccessToken();
+        const refreshToken = getRefreshToken();
 
         if (accessToken && refreshToken) {
             router.push('/admin');

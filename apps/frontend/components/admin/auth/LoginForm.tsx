@@ -10,7 +10,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
         try {
             // Используем функцию loginAdmin из утилит JWT
-            await loginAdmin(username, password);
+            await loginAdmin(email, password);
             
             if (onSuccess) {
                 onSuccess();
@@ -32,7 +32,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError('Неверное имя пользователя или пароль');
+            setError('Неверный email или пароль');
         } finally {
             setIsLoading(false);
         }
@@ -50,15 +50,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
-                        Имя пользователя
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                        Email
                     </label>
                     <input
-                        id="username"
-                        type="text"
+                        id="email"
+                        type="email"
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                     />
                 </div>

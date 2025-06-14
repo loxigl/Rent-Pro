@@ -62,7 +62,7 @@ export default function BookingsClient() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<BookingStatus | "">("");
+  const [filterStatus, setFilterStatus] = useState<BookingStatus | "all">("all");
   const [filterName, setFilterName] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [bookingToDelete, setBookingToDelete] = useState<number | null>(null);
@@ -74,7 +74,7 @@ export default function BookingsClient() {
       const response = await getBookings({
         page,
         limit: 10,
-        status: filterStatus || undefined,
+        status: filterStatus === 'all' ? undefined : filterStatus,
         client_name: filterName || undefined
       });
 
@@ -198,7 +198,7 @@ export default function BookingsClient() {
                 <Select
                   value={filterStatus}
                   onValueChange={(value) => {
-                    setFilterStatus(value as BookingStatus | "");
+                    setFilterStatus(value as BookingStatus | "all");
                     setPage(1);
                   }}
                 >
@@ -206,7 +206,7 @@ export default function BookingsClient() {
                     <SelectValue placeholder="Все статусы" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Все статусы</SelectItem>
+                    <SelectItem value="all">Все статусы</SelectItem>
                     <SelectItem value="pending">Ожидает</SelectItem>
                     <SelectItem value="confirmed">Подтверждено</SelectItem>
                     <SelectItem value="cancelled">Отменено</SelectItem>
@@ -247,7 +247,7 @@ export default function BookingsClient() {
                 variant="ghost"
                 className="w-full mt-4"
                 onClick={() => {
-                  setFilterStatus("");
+                  setFilterStatus("all");
                   setFilterName("");
                   setPage(1);
                 }}

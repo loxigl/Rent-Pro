@@ -79,7 +79,7 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@avitorentpro.ru}
       # URL сайта и админ-панели
       - SITE_URL=${SITE_URL:-https://kvartiry26.ru}
-      - ADMIN_URL=${ADMIN_URL:-https://admin.kvartiry26.ru}
+      - ADMIN_URL=${ADMIN_URL:-https://kvartiry26.ru/admin}
     networks:
       - avitorentpro
 
@@ -124,7 +124,7 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@avitorentpro.ru}
       # URL сайта и админ-панели
       - SITE_URL=${SITE_URL:-https://kvartiry26.ru}
-      - ADMIN_URL=${ADMIN_URL:-https://admin.kvartiry26.ru}
+      - ADMIN_URL=${ADMIN_URL:-https://kvartiry26.ru/admin}
     networks:
       - avitorentpro
 

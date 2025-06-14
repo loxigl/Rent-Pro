@@ -69,7 +69,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-# Регистрация маршрутов с префиксом /api
 app.include_router(auth_router)
 app.include_router(apartment_router)
 app.include_router(image_router)

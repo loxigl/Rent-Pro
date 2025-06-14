@@ -77,9 +77,9 @@ class Settings(BaseSettings):
     SUPPORT_EMAIL: str = Field("support@avitorentpro.ru", env="SUPPORT_EMAIL")
     ADMIN_EMAIL: str = Field("admin@avitorentpro.ru", env="ADMIN_EMAIL")
 
-    # URL сайта и админ-панели
+    # URL основного сайта и админки
     SITE_URL: str = Field("https://kvartiry26.ru", env="SITE_URL")
-    ADMIN_URL: str = Field("https://admin.kvartiry26.ru", env="ADMIN_URL")
+    ADMIN_URL: str = Field("https://kvartiry26.ru/admin", env="ADMIN_URL")
 
     class Config:
         env_file = ".env"

@@ -13,7 +13,7 @@ from src.schemas.admin import (
     ApartmentAdminCreate, ApartmentAdminUpdate, ApartmentAdminDetail,
     ApartmentAdminListResponse, ApartmentAdminListItem
 )
-from src.middleware.auth import get_current_active_user,check_permissions
+from src.middleware.auth import get_current_active_user, check_permissions
 from src.middleware.acl import require_apartments_read, require_apartments_write
 from src.services.event_log_service import log_event, log_action
 from src.models.auth.role import RolePermission
@@ -104,7 +104,8 @@ async def get_apartments(
             active=apartment.active,
             photos_count=photos_count,
             cover_url=cover_url,
-            created_at=apartment.created_at
+            created_at=apartment.created_at,
+            booking_enabled=apartment.booking_enabled
         )
 
         items.append(item)
@@ -154,7 +155,8 @@ async def get_apartment(
         active=apartment.active,
         photos_count=photos_count,
         created_at=apartment.created_at,
-        updated_at=apartment.updated_at
+        updated_at=apartment.updated_at,
+        booking_enabled=apartment.booking_enabled
     )
 
     return result
@@ -189,7 +191,7 @@ async def create_apartment(
     db.refresh(apartment)
 
     # Логируем событие создания квартиры
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.APARTMENT_CREATED,
         user_id=current_user.id,
@@ -215,7 +217,8 @@ async def create_apartment(
         active=apartment.active,
         photos_count=photos_count,
         created_at=apartment.created_at,
-        updated_at=apartment.updated_at
+        updated_at=apartment.updated_at,
+        booking_enabled=apartment.booking_enabled
     )
 
     return result
@@ -275,7 +278,7 @@ async def update_apartment(
     db.refresh(apartment)
 
     # Логируем событие обновления квартиры
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.APARTMENT_UPDATED,
         user_id=current_user.id,
@@ -306,7 +309,8 @@ async def update_apartment(
         active=apartment.active,
         photos_count=photos_count,
         created_at=apartment.created_at,
-        updated_at=apartment.updated_at
+        updated_at=apartment.updated_at,
+        booking_enabled=apartment.booking_enabled
     )
 
     return result
@@ -353,7 +357,7 @@ async def delete_apartment(
     db.commit()
 
     # Логируем событие удаления квартиры
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.APARTMENT_DELETED,
         user_id=current_user.id,
@@ -370,7 +374,7 @@ async def delete_apartment(
 async def toggle_apartment_booking(
         apartment_id: int = Path(..., description="ID квартиры"),
         enable: bool = Query(True, description="Включить или отключить бронирование"),
-        db: AsyncSession = Depends(get_db),
+        db: Session = Depends(get_db),
         current_user: dict = Depends(check_permissions(required_permissions=RolePermission.MANAGE_APARTMENTS))
 ):
     """
@@ -378,7 +382,7 @@ async def toggle_apartment_booking(
     """
     # Проверяем наличие квартиры
     apartment_query = select(Apartment).where(Apartment.id == apartment_id)
-    result = await db.execute(apartment_query)
+    result = db.execute(apartment_query)
     apartment = result.scalars().first()
 
     if not apartment:
@@ -392,21 +396,20 @@ async def toggle_apartment_booking(
 
     # Логируем изменение
     action = "включена" if enable else "отключена"
-    await log_action(
+    log_action(
         db=db,
         entity_type=EntityType.APARTMENT,
         entity_id=apartment_id,
         event_type=EventType.APARTMENT_UPDATED,
-        description=f"Возможность бронирования для квартиры #{apartment_id} {action} пользователем {current_user.get('username')}",
-        user_id=current_user.get('id'),
+        description=f"Возможность бронирования для квартиры #{apartment_id} {action} пользователем {current_user.email}",
+        user_id=current_user.id,
         metadata={"booking_enabled": enable}
     )
 
-    await db.commit()
+    db.commit()
 
     return {
         "apartment_id": apartment_id,
         "booking_enabled": enable,
         "message": f"Возможность бронирования для квартиры {apartment_id} успешно {'включена' if enable else 'отключена'}"
     }
-

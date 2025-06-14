@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-const { toast } = useToast();
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +27,7 @@ interface BookingDetailProps {
 }
 
 export default function BookingDetail({ booking, onClose, onUpdate }: BookingDetailProps) {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({

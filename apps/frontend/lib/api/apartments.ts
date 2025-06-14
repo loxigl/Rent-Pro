@@ -47,6 +47,7 @@ export interface GetApartmentsParams {
 
 // Исправляем потенциальное дублирование /api
 import { getApiUrl } from './config';
+import { publicRoutes } from './routes';
 
 /**
  * Получение списка квартир с пагинацией и сортировкой
@@ -77,7 +78,7 @@ export async function getApartments(params: GetApartmentsParams = {}): Promise<A
     });
 
     try {
-        const response = await fetch(getApiUrl(`/apartments?${searchParams.toString()}`));
+        const response = await fetch(getApiUrl(publicRoutes.apartments.list) + `?${searchParams.toString()}`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch apartments: ${response.status}, url: ${response.url}`);
@@ -119,7 +120,7 @@ export async function getApartmentById(id: number): Promise<ApartmentDetail> {
     }
 
     try {
-        const response = await fetch(getApiUrl(`/apartments/${id}`));
+        const response = await fetch(getApiUrl(publicRoutes.apartments.detail(id)));
 
         if (!response.ok) {
             throw new Error(`Failed to fetch apartment with id ${id}: ${response.status}, url: ${response.url}`);

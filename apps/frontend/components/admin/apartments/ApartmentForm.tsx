@@ -4,8 +4,9 @@ import {useState, useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
+import {getApiBaseUrl} from '@/lib/api/config';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = getApiBaseUrl();
 
 // Определение интерфейса для данных квартиры
 interface ApartmentFormData {

@@ -1,17 +1,19 @@
 "use client";
 
-import {useState} from 'react';
+import React from 'react';
+import {Avatar, AvatarFallback} from '@/components/ui/avatar';
+import {Button} from '@/components/ui/button';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {logout} from '@/lib/utils/admin/jwt';
+import {logoutAdmin} from '@/lib/utils/admin/jwt';
 
 export default function AdminHeader() {
     const router = useRouter();
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
     const handleLogout = async () => {
         try {
-            await logout();
+            await logoutAdmin();
             router.push('/admin/login');
         } catch (error) {
             console.error('Ошибка при выходе:', error);

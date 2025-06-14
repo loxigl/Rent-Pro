@@ -12,7 +12,7 @@ from src.services.event_log_service import log_action
 from src.models.event_log import EventType, EntityType
 
 router = APIRouter(
-    prefix="/api/v1/admin/settings",
+    prefix="/settings",
     tags=["admin", "settings"]
 )
 

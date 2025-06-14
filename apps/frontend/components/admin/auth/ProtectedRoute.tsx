@@ -2,7 +2,7 @@
 
 import {useEffect, useState, ReactNode} from 'react';
 import {useRouter, usePathname} from 'next/navigation';
-import {isTokenExpired, refreshTokens} from '@/lib/utils/admin/jwt';
+import {isTokenExpired, refreshAccessToken, getAccessToken, getRefreshToken} from '@/lib/utils/admin/jwt';
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -28,8 +28,8 @@ const ProtectedRoute = ({children}: ProtectedRouteProps) => {
         const checkAuth = async () => {
             try {
                 // Получаем токены из localStorage
-                const accessToken = localStorage.getItem('accessToken');
-                const refreshToken = localStorage.getItem('refreshToken');
+                const accessToken = getAccessToken();
+                const refreshToken = getRefreshToken();
 
                 // Если токенов нет, перенаправляем на страницу логина
                 if (!accessToken || !refreshToken) {
@@ -39,7 +39,10 @@ const ProtectedRoute = ({children}: ProtectedRouteProps) => {
                 // Проверяем, истек ли токен
                 if (isTokenExpired(accessToken)) {
                     // Пытаемся обновить токен
-                    await refreshTokens();
+                    const result = await refreshAccessToken();
+                    if (!result) {
+                        throw new Error('Failed to refresh token');
+                    }
                 }
 
                 // Если все проверки пройдены, считаем пользователя аутентифицированным

@@ -2,8 +2,10 @@
  * API-клиент для работы с журналом событий в админ-панели
  */
 
-import {getAccessToken} from '@/lib/utils/admin/jwt';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getAccessToken } from '@/lib/utils/admin/jwt';
+import { getApiBaseUrl } from '@/lib/api/config';
+
+const API_URL = getApiBaseUrl() ;
 // Типы событий
 export type EventType =
     | 'user_login'

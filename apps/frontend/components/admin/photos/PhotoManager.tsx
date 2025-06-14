@@ -5,6 +5,7 @@ import PhotoUploader from '@/components/admin/photos/PhotoUploader';
 import SortablePhotoList from '@/components/admin/photos/SortablePhotoList';
 import {Button} from '@/components/ui/button';
 import {getAccessToken} from '@/lib/utils/admin/jwt';
+import {getApiBaseUrl} from "@/lib/api/config";
 
 // Интерфейс для фотографии
 interface Photo {
@@ -29,7 +30,7 @@ interface PhotoManagerProps {
     apartmentId: number;
 }
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_URL = getApiBaseUrl();
 
 export default function PhotoManager({apartmentId}: PhotoManagerProps) {
     const [photos, setPhotos] = useState<Photo[]>([]);

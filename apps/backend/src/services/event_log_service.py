@@ -31,13 +31,17 @@ def log_action(
         metadata: Дополнительные данные, связанные с событием (опционально)
     """
     try:
+        # Создаем payload с описанием и дополнительными данными
+        payload_data = {"description": description}
+        if metadata:
+            payload_data.update(metadata)
+
         event = EventLog(
             entity_type=entity_type,
             entity_id=str(entity_id),
             event_type=event_type,
-            description=description,
             user_id=user_id,
-            metadata=metadata
+            payload=payload_data
         )
 
         db.add(event)
@@ -144,8 +148,16 @@ def log_event(
         payload: Дополнительные данные события (опционально)
         request: Объект запроса (опционально)
     """
-    # Получаем IP и User-Agent из запроса, если он предоставлен
+    # Формируем описание события
+    description = (
+        f"{event_type.value if hasattr(event_type, 'value') else event_type} "
+        f"для {entity_type.value if hasattr(entity_type, 'value') else entity_type}"
+    )
+    
+    # Подготавливаем метаданные
     metadata = {}
+    
+    # Получаем IP и User-Agent из запроса, если он предоставлен
     if request:
         client_host = request.client.host if hasattr(request, 'client') else None
         metadata.update({
@@ -153,8 +165,9 @@ def log_event(
             "user_agent": request.headers.get("user-agent")
         })
 
+    # Добавляем переданные payload данные
     if payload:
-        metadata.update({"payload": payload})
+        metadata.update(payload)
 
     # Вызываем функцию log_action для фактического сохранения
     return log_action(
@@ -162,10 +175,7 @@ def log_event(
         entity_type=entity_type,
         entity_id=entity_id or "system",
         event_type=event_type,
-        description=(
-            f"{event_type.value if hasattr(event_type, 'value') else event_type} "
-            f"для {entity_type.value if hasattr(entity_type, 'value') else entity_type}"
-        ),
+        description=description,
         user_id=user_id,
         metadata=metadata
     )

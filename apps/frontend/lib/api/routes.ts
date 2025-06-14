@@ -9,16 +9,17 @@ export const publicRoutes = {
   apartments: {
     list: '/apartments',
     detail: (id: number) => `/apartments/${id}`,
-    search: '/apartments/search',
+    photos: (id: number) => `/apartments/${id}/photos`,
   },
   // Бронирования
   bookings: {
-    create: '/bookings',
-    cancel: (id: number) => `/bookings/${id}/cancel`,
+    create: '/api/v1/bookings',
+    cancel: (id: number) => `/api/v1/bookings/${id}/cancel`,
+    checkAvailability: '/api/v1/bookings/check-availability',
   },
   // Публичные настройки
   settings: {
-    public: '/settings/public'
+    public: '/api/v1/settings/public'
   }
 };
 
@@ -26,9 +27,10 @@ export const publicRoutes = {
 export const adminRoutes = {
   // Аутентификация
   auth: {
-    login: '/auth/admin/login',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
+    login: '/admin/api/v1/auth/login',
+    logout: '/admin/api/v1/auth/logout',
+    refresh: '/admin/api/v1/auth/refresh',
+    changePassword: '/admin/api/v1/auth/change-password',
   },
   // Управление квартирами
   apartments: {
@@ -37,12 +39,15 @@ export const adminRoutes = {
     create: '/admin/api/v1/apartments',
     update: (id: number) => `/admin/api/v1/apartments/${id}`,
     delete: (id: number) => `/admin/api/v1/apartments/${id}`,
+    bookingToggle: (id: number) => `/admin/api/v1/apartments/${id}/booking-toggle`,
   },
   // Управление фотографиями
   photos: {
-    upload: '/admin/api/v1/photos',
-    delete: (id: number) => `/admin/api/v1/photos/${id}`,
-    update: (id: number) => `/admin/api/v1/photos/${id}`,
+    list: (apartmentId: number) => `/admin/api/v1/photos/${apartmentId}`,
+    upload: (apartmentId: number) => `/admin/api/v1/photos/${apartmentId}/upload`,
+    update: (photoId: number) => `/admin/api/v1/photos/${photoId}`,
+    delete: (photoId: number) => `/admin/api/v1/photos/${photoId}`,
+    bulkUpdate: '/admin/api/v1/photos/bulk-update',
   },
   // Управление пользователями
   users: {
@@ -55,6 +60,8 @@ export const adminRoutes = {
   // Журнал событий
   events: {
     list: '/admin/api/v1/events',
+    detail: (id: string) => `/admin/api/v1/events/${id}`,
+    summary: '/admin/api/v1/events/stats/summary',
   },
   // Управление бронированиями
   bookings: {
@@ -62,6 +69,7 @@ export const adminRoutes = {
     detail: (id: number) => `/admin/api/v1/bookings/${id}`,
     update: (id: number) => `/admin/api/v1/bookings/${id}`,
     delete: (id: number) => `/admin/api/v1/bookings/${id}`,
+    updateStatus: (id: number) => `/admin/api/v1/bookings/${id}/status`,
   },
   // Статистика
   stats: {
@@ -71,5 +79,7 @@ export const adminRoutes = {
   settings: {
     get: '/admin/api/v1/settings',
     update: '/admin/api/v1/settings',
+    bookingToggle: '/admin/api/v1/settings/booking-toggle',
+    apartmentBookingToggle: (id: number) => `/admin/api/v1/settings/apartments/${id}/booking-toggle`,
   }
 }; 

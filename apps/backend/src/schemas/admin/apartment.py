@@ -13,6 +13,7 @@ class ApartmentAdminBase(BaseModel):
     address: str = Field(..., min_length=5, max_length=255)
     description: Optional[str] = None
     active: bool = True
+    booking_enabled: bool = False
 
     @validator('title')
     @classmethod
@@ -46,6 +47,7 @@ class ApartmentAdminUpdate(BaseModel):
     address: Optional[str] = Field(None, min_length=5, max_length=255)
     description: Optional[str] = None
     active: Optional[bool] = None
+    booking_enabled: bool = None
 
     @validator('title')
     @classmethod
@@ -83,6 +85,7 @@ class ApartmentAdminListItem(BaseModel):
     rooms: int
     area_m2: float
     active: bool
+    booking_enabled: bool
     photos_count: int
     cover_url: Optional[str] = None
     created_at: datetime
@@ -97,4 +100,3 @@ class ApartmentAdminListResponse(BaseModel):
     total: int
     page: int
     page_size: int
-

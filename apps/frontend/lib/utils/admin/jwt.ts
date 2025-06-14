@@ -3,7 +3,8 @@
  */
 
 // Базовый URL API
-import { getApiBaseUrl } from '@/lib/api/config';
+import { getApiUrl } from '@/lib/api/config';
+import { adminRoutes } from '@/lib/api/routes';
 
 /**
  * Проверяет, истек ли токен
@@ -26,136 +27,183 @@ export const isTokenExpired = (token: string): boolean => {
         return now >= exp;
     } catch (error) {
         console.error('Error parsing token:', error);
-        // В случае ошибки считаем токен истекшим
-        return true;
+        return true; // В случае ошибки считаем, что токен истек
     }
 };
 
 /**
- * Обновляет токены с использованием refresh token
- * @returns Promise<void>
+ * Сохраняет токены JWT в localStorage
+ * @param accessToken Токен доступа
+ * @param refreshToken Токен обновления
  */
-export const refreshTokens = async (): Promise<void> => {
-    const refreshToken = localStorage.getItem('refresh_token');
+export const setTokens = (accessToken: string, refreshToken: string): void => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+};
 
-    if (!refreshToken) {
-        throw new Error('Нет токена обновления');
+/**
+ * Получает токен доступа из localStorage
+ * @returns Токен доступа или null, если токен не найден или истек
+ */
+export const getAccessToken = (): string | null => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+        return null;
     }
 
-    try {
-        const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                refresh_token: refreshToken,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Ошибка обновления токена');
+    // Если токен истек, пытаемся его обновить
+    if (isTokenExpired(token)) {
+        // Если у нас нет возможности обновить токен (мы не в браузере),
+        // просто возвращаем null
+        if (typeof window === 'undefined') {
+            return null;
         }
-
-        const data = await response.json();
-
-        // Сохраняем новые токены
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        localStorage.setItem('tokenTimestamp', Date.now().toString());
-
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        // Удаляем токены при ошибке обновления
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('tokenTimestamp');
-        throw error;
+        
+        // Пытаемся обновить токен в фоне
+        refreshAccessToken().catch(console.error);
+        return null;
     }
+
+    return token;
 };
 
 /**
- * Возвращает актуальный access token
- * Если токен истек, пытается обновить его
- * @returns Promise<string> - актуальный access token
+ * Получает токен обновления из localStorage
+ * @returns Токен обновления или null, если токен не найден
  */
-export const getAccessToken = async (): Promise<string> => {
-    let accessToken = localStorage.getItem('access_token');
-
-    if (!accessToken) {
-        throw new Error('No access token available');
-    }
-
-    if (isTokenExpired(accessToken)) {
-        await refreshTokens();
-        accessToken = localStorage.getItem('access_token');
-
-        if (!accessToken) {
-            throw new Error('Failed to get access token');
-        }
-    }
-
-    return accessToken;
+export const getRefreshToken = (): string | null => {
+    return localStorage.getItem('refreshToken');
 };
 
 /**
- * Выходит из системы (удаляет токены)
- * @returns Promise<void>
+ * Удаляет JWT токены из localStorage
  */
-export const logout = async (): Promise<void> => {
-    const refreshToken = localStorage.getItem('refresh_token');
-
-    if (refreshToken) {
-        try {
-            const accessToken = await getAccessToken();
-
-            // Отправляем запрос на логаут
-            await fetch(`${getApiBaseUrl()}/api/v1/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                body: JSON.stringify({refresh_token: refreshToken}),
-            });
-        } catch (error) {
-            console.error('Error during logout:', error);
-        }
-    }
-
-    // Удаляем токены в любом случае
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('tokenTimestamp');
+export const clearTokens = (): void => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
 };
 
 /**
- * Выполняет авторизацию администратора
- * @param username Имя пользователя
- * @param password Пароль
- * @returns Токены доступа и обновления
+ * Вход в админ-панель
+ * @param email Email пользователя
+ * @param password Пароль пользователя
+ * @returns Ответ сервера с токенами
  */
-export const loginAdmin = async (username: string, password: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/admin/login`, {
+export const loginAdmin = async (email: string, password: string): Promise<{ access_token: string; refresh_token: string }> => {
+    const response = await fetch(getApiUrl(adminRoutes.auth.login), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            username,
-            password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
-        throw new Error('Ошибка авторизации');
+        const errorText = await response.text();
+        throw new Error(`Ошибка входа: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
     
-    // Сохраняем токены в локальном хранилище
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
+    // Сохраняем токены
+    setTokens(data.access_token, data.refresh_token);
     
     return data;
+};
+
+/**
+ * Выход из системы (логаут)
+ */
+export const logoutAdmin = async (): Promise<void> => {
+    const refreshToken = getRefreshToken();
+    const accessToken = getAccessToken();
+    
+    if (!refreshToken || !accessToken) {
+        clearTokens();
+        return;
+    }
+    
+    try {
+        const response = await fetch(getApiUrl(adminRoutes.auth.logout), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        
+        if (!response.ok) {
+            console.error('Ошибка при выходе из системы:', response.status);
+        }
+    } catch (error) {
+        console.error('Ошибка при выходе из системы:', error);
+    } finally {
+        clearTokens();
+    }
+};
+
+/**
+ * Обновляет токен доступа, используя токен обновления
+ * @returns Новая пара токенов
+ */
+export const refreshAccessToken = async (): Promise<{ access_token: string; refresh_token: string } | null> => {
+    const refreshToken = getRefreshToken();
+    
+    if (!refreshToken) {
+        return null;
+    }
+    
+    try {
+        const response = await fetch(getApiUrl(adminRoutes.auth.refresh), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        
+        if (!response.ok) {
+            // Если ошибка обновления токена, очищаем хранилище
+            clearTokens();
+            throw new Error(`Ошибка обновления токена: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Сохраняем новые токены
+        setTokens(data.access_token, data.refresh_token);
+        
+        return data;
+    } catch (error) {
+        console.error('Ошибка при обновлении токена:', error);
+        clearTokens();
+        return null;
+    }
+};
+
+/**
+ * Изменяет пароль пользователя
+ * @param currentPassword Текущий пароль
+ * @param newPassword Новый пароль
+ */
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    const token = getAccessToken();
+    
+    if (!token) {
+        throw new Error('Необходима авторизация');
+    }
+    
+    const response = await fetch(getApiUrl(adminRoutes.auth.changePassword), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+        }),
+    });
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка изменения пароля: ${response.status} ${errorText}`);
+    }
 };

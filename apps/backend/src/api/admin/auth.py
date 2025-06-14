@@ -40,7 +40,7 @@ async def login(
     if not user or not verify_password(auth_data.password, user.password_hash):
         logger.warning(f"Failed login attempt for email: {auth_data.email}")
         # Логируем событие неудачной авторизации
-        await log_event(
+        log_event(
             db=db,
             event_type=EventType.USER_LOGIN,
             entity_type=EntityType.USER,
@@ -75,7 +75,7 @@ async def login(
     db.commit()
 
     # Логируем событие успешной авторизации
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.USER_LOGIN,
         user_id=user.id,
@@ -168,7 +168,7 @@ async def logout(
         add_token_to_blacklist(refresh_data.refresh_token)
 
         # Логируем событие выхода
-        await log_event(
+        log_event(
             db=db,
             event_type=EventType.USER_LOGOUT,
             user_id=current_user.id,
@@ -213,7 +213,7 @@ async def change_password(
     db.commit()
 
     # Логируем событие изменения пароля
-    await log_event(
+    log_event(
         db=db,
         event_type="password_changed",
         user_id=current_user.id,
