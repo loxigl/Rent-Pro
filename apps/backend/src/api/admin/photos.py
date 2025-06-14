@@ -248,7 +248,7 @@ async def upload_photo(
             asyncio.create_task(update_photo_url())
 
         # Логируем событие
-        await log_event(
+        log_event(
             db=db,
             event_type=EventType.PHOTO_UPLOADED,
             user_id=current_user.id,
@@ -344,7 +344,7 @@ async def update_photo(
     db.refresh(photo)
 
     # Логируем событие
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,
         user_id=current_user.id,
@@ -413,7 +413,7 @@ async def bulk_update_photos(
     db.commit()
 
     # Логируем событие
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,
         user_id=current_user.id,
@@ -476,7 +476,7 @@ async def delete_photo(
             logger.error(f"Error deleting image from MinIO: {e}")
 
     # Логируем событие
-    await log_event(
+    log_event(
         db=db,
         event_type=EventType.PHOTO_DELETED,
         user_id=current_user.id,
