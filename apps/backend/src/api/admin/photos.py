@@ -383,17 +383,17 @@ async def bulk_update_photos(
     """
     Массовое обновление порядка фотографий одной квартиры.
 
-    - **bulk_data.updates**: список {id, sort_order}
+    - **bulk_data.updates**: список словарей {"id": int, "sort_order": int}
     """
-    # 1) Собираем ID и проверяем уникальность в payload
-    photo_ids = [u.id for u in bulk_data.updates]
+    # 1) Собираем ID и проверяем, что они уникальны в запросе
+    photo_ids = [u["id"] for u in bulk_data.updates]
     if len(photo_ids) != len(set(photo_ids)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Дублирование ID фотографий в запросе"
         )
 
-    # 2) Подгружаем указанные фото и проверяем, что все из одной квартиры
+    # 2) Загружаем указанные фото и убеждаемся, что все они есть
     photos = db.query(ApartmentPhoto) \
                .filter(ApartmentPhoto.id.in_(photo_ids)) \
                .all()
@@ -403,37 +403,56 @@ async def bulk_update_photos(
             detail="Некоторые фотографии не найдены"
         )
 
-    apt_ids = {p.apartment_id for p in photos}
-    if len(apt_ids) != 1:
+    # 3) Проверяем, что все они из одной квартиры
+    apartment_ids = {p.apartment_id for p in photos}
+    if len(apartment_ids) != 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Обновления должны относиться к одной квартире"
+            detail="Все фотографии должны принадлежать одной квартире"
         )
-    apartment_id = apt_ids.pop()
+    apartment_id = apartment_ids.pop()
 
-    # 3) Подгружаем все фото этой квартиры
+    # 4) Подгружаем все фото этой квартиры
     all_photos = (
         db.query(ApartmentPhoto)
           .filter_by(apartment_id=apartment_id)
-          .order_by(ApartmentPhoto.sort_order)
           .all()
     )
 
-    # 4) Составляем «новый порядок» ID: сначала по bulk_data.sort_order, затем остальные
-    #    В конструкции ниже мы игнорируем переданный sort_order и будем просто
-    #    расставлять по порядку согласно их порядку в списке bulk_data.updates.
-    order_map = {u.id: u.sort_order for u in bulk_data.updates}
-    # Сортируем: ключ — переданный sort_order, у неупомянутых ставим большой offset
-    ordered = sorted(
-        all_photos,
-        key=lambda p: order_map.get(p.id, max(order_map.values()) + 1)
+    # 5) Строим мапу новых порядков из запроса
+    #    и проверяем, что sort_order в запросе тоже уникальны
+    order_map = {}
+    for u in bulk_data.updates:
+        sid = u["sort_order"]
+        if sid in order_map.values():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Дублирование sort_order={sid} в запросе"
+            )
+        order_map[u["id"]] = sid
+
+    # 6) Собираем итоговый упорядоченный список фотографий:
+    #    сначала те, у которых есть новый sort_order (в порядке sort_order),
+    #    потом все остальные (в порядке их старого sort_order)
+    updated = []
+    # фотографии с новым порядком, отсортированные по заявленному sort_order
+    with_new = sorted(
+        [p for p in all_photos if p.id in order_map],
+        key=lambda p: order_map[p.id]
     )
+    updated.extend(with_new)
+    # остальные
+    without = sorted(
+        [p for p in all_photos if p.id not in order_map],
+        key=lambda p: p.sort_order
+    )
+    updated.extend(without)
 
-    # 5) Перенумеровываем подряд 0,1,2,...
-    for idx, photo in enumerate(ordered):
-        photo.sort_order = idx
+    # 7) Перенумеровываем подряд 0..N-1
+    for new_index, photo in enumerate(updated):
+        photo.sort_order = new_index
 
-    # 6) Фиксим и логируем
+    # 8) Сохраняем и логируем
     db.commit()
     log_event(
         db=db,
@@ -444,6 +463,7 @@ async def bulk_update_photos(
         payload={"updates": bulk_data.updates},
         request=request
     )
+
     return {"message": "Порядок фотографий успешно обновлен"}
 
 
