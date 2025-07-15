@@ -375,56 +375,75 @@ async def update_photo(
 
 @router.post("/bulk-update", status_code=status.HTTP_200_OK)
 async def bulk_update_photos(
-        request: Request,
-        bulk_data: BulkPhotoUpdateRequest,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(require_photos_write)
+    request: Request,
+    bulk_data: BulkPhotoUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_photos_write)
 ):
     """
-    Массовое обновление порядка фотографий.
+    Массовое обновление порядка фотографий одной квартиры.
 
-    - **bulk_data**: Массив обновлений {id, sort_order}
+    - **bulk_data.updates**: список {id, sort_order}
     """
-    # Собираем IDs всех фотографий для проверки
-    photo_ids = [update.get("id") for update in bulk_data.updates]
+    # 1) Собираем ID и проверяем уникальность в payload
+    photo_ids = [u.id for u in bulk_data.updates]
+    if len(photo_ids) != len(set(photo_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Дублирование ID фотографий в запросе"
+        )
 
-    # Получаем все фотографии одним запросом
-    photos = db.query(ApartmentPhoto).filter(ApartmentPhoto.id.in_(photo_ids)).all()
-
-    # Создаем словарь для быстрого доступа
-    photo_dict = {photo.id: photo for photo in photos}
-
-    # Проверяем, что все фотографии найдены
+    # 2) Подгружаем указанные фото и проверяем, что все из одной квартиры
+    photos = db.query(ApartmentPhoto) \
+               .filter(ApartmentPhoto.id.in_(photo_ids)) \
+               .all()
     if len(photos) != len(photo_ids):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Некоторые фотографии не найдены"
         )
 
-    # Применяем обновления
-    for update in bulk_data.updates:
-        photo_id = update.get("id")
-        sort_order = update.get("sort_order")
+    apt_ids = {p.apartment_id for p in photos}
+    if len(apt_ids) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Обновления должны относиться к одной квартире"
+        )
+    apartment_id = apt_ids.pop()
 
-        if photo_id in photo_dict and sort_order is not None:
-            photo_dict[photo_id].sort_order = sort_order
+    # 3) Подгружаем все фото этой квартиры
+    all_photos = (
+        db.query(ApartmentPhoto)
+          .filter_by(apartment_id=apartment_id)
+          .order_by(ApartmentPhoto.sort_order)
+          .all()
+    )
 
-    # Сохраняем изменения в БД
+    # 4) Составляем «новый порядок» ID: сначала по bulk_data.sort_order, затем остальные
+    #    В конструкции ниже мы игнорируем переданный sort_order и будем просто
+    #    расставлять по порядку согласно их порядку в списке bulk_data.updates.
+    order_map = {u.id: u.sort_order for u in bulk_data.updates}
+    # Сортируем: ключ — переданный sort_order, у неупомянутых ставим большой offset
+    ordered = sorted(
+        all_photos,
+        key=lambda p: order_map.get(p.id, max(order_map.values()) + 1)
+    )
+
+    # 5) Перенумеровываем подряд 0,1,2,...
+    for idx, photo in enumerate(ordered):
+        photo.sort_order = idx
+
+    # 6) Фиксим и логируем
     db.commit()
-
-    # Логируем событие
     log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,
         user_id=current_user.id,
         entity_type=EntityType.PHOTO,
         entity_id="bulk",
-        payload={
-            "updates": bulk_data.updates
-        },
+        payload={"updates": bulk_data.updates},
         request=request
     )
-
     return {"message": "Порядок фотографий успешно обновлен"}
 
 
