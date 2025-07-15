@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, File, UploadFile, Form, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, asc
+from sqlalchemy import func, desc, asc, text
 from typing import Optional, List
 import logging
 
@@ -385,75 +385,76 @@ async def bulk_update_photos(
 
     - **bulk_data.updates**: список словарей {"id": int, "sort_order": int}
     """
-    # 1) Собираем ID и проверяем, что они уникальны в запросе
+    # 1) Проверяем вход: уникальность ID и что payload не пустой
     photo_ids = [u["id"] for u in bulk_data.updates]
+    if not photo_ids:
+        raise HTTPException(status_code=400, detail="Нечего обновлять")
     if len(photo_ids) != len(set(photo_ids)):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="Дублирование ID фотографий в запросе"
         )
 
-    # 2) Загружаем указанные фото и убеждаемся, что все они есть
+    # 2) Загружаем указанные фото и проверяем, что они все из одной квартиры
     photos = db.query(ApartmentPhoto) \
                .filter(ApartmentPhoto.id.in_(photo_ids)) \
                .all()
+
     if len(photos) != len(photo_ids):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="Некоторые фотографии не найдены"
         )
 
-    # 3) Проверяем, что все они из одной квартиры
-    apartment_ids = {p.apartment_id for p in photos}
-    if len(apartment_ids) != 1:
+    auction_ids = {p.apartment_id for p in photos}
+    if len(auction_ids) != 1:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="Все фотографии должны принадлежать одной квартире"
         )
-    apartment_id = apartment_ids.pop()
+    apartment_id = auction_ids.pop()
 
-    # 4) Подгружаем все фото этой квартиры
+    # 3) Подготовка мапы новых порядков и проверка уникальности sort_order в запросе
+    order_map = {}
+    for u in bulk_data.updates:
+        sid = u["sort_order"]
+        if sid in order_map.values():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Дублирование sort_order={sid} в запросе"
+            )
+        order_map[u["id"]] = sid
+
+    # 4) Начинаем транзакцию и откладываем проверку уникальности до коммита
+    #    (констрейнт должен быть создан как DEFERRABLE)
+    db.execute(text("SET CONSTRAINTS uq_ap_photo_sort DEFERRED"))
+
+    # 5) Подгружаем все фото этой квартиры и полностью переставляем «с нуля»
     all_photos = (
         db.query(ApartmentPhoto)
           .filter_by(apartment_id=apartment_id)
           .all()
     )
 
-    # 5) Строим мапу новых порядков из запроса
-    #    и проверяем, что sort_order в запросе тоже уникальны
-    order_map = {}
-    for u in bulk_data.updates:
-        sid = u["sort_order"]
-        if sid in order_map.values():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Дублирование sort_order={sid} в запросе"
-            )
-        order_map[u["id"]] = sid
-
-    # 6) Собираем итоговый упорядоченный список фотографий:
-    #    сначала те, у которых есть новый sort_order (в порядке sort_order),
-    #    потом все остальные (в порядке их старого sort_order)
-    updated = []
-    # фотографии с новым порядком, отсортированные по заявленному sort_order
+    # Сначала — по заявленному sort_order, потом «лишние»
     with_new = sorted(
         [p for p in all_photos if p.id in order_map],
         key=lambda p: order_map[p.id]
     )
-    updated.extend(with_new)
-    # остальные
     without = sorted(
         [p for p in all_photos if p.id not in order_map],
         key=lambda p: p.sort_order
     )
-    updated.extend(without)
+    reordered = with_new + without
 
-    # 7) Перенумеровываем подряд 0..N-1
-    for new_index, photo in enumerate(updated):
-        photo.sort_order = new_index
+    # Нумеруем подряд 0..N-1
+    for idx, photo in enumerate(reordered):
+        photo.sort_order = idx
 
-    # 8) Сохраняем и логируем
+    # 6) Коммитит всё одной пачкой, проверка UNIQUE произойдёт только здесь
     db.commit()
+
+    # 7) Логируем
     log_event(
         db=db,
         event_type=EventType.PHOTO_UPDATED,

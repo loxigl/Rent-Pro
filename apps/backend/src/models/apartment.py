@@ -52,5 +52,5 @@ class ApartmentPhoto(Base):
 
     # Уникальное ограничение для сортировки фото
     __table_args__ = (
-        UniqueConstraint('apartment_id', 'sort_order', name='uq_ap_photo_sort'),
+        UniqueConstraint('apartment_id', 'sort_order', name='uq_ap_photo_sort', deferrable=True, initially='DEFERRED'),
     )
