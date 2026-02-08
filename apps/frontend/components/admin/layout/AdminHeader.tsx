@@ -26,7 +26,7 @@ export default function AdminHeader() {
                 {/* Логотип и заголовок */}
                 <div className="flex items-center">
                     <Link href="/admin" className="flex items-center">
-                        <h1 className="text-xl font-bold text-primary-700">Kvartiry26</h1>
+                        <h1 className="text-xl font-bold text-primary-700">Квартиры26</h1>
                         <span className="ml-2 text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">Admin</span>
                     </Link>
                 </div>

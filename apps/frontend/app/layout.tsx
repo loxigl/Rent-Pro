@@ -13,15 +13,15 @@ const inter = Inter({
 // Метаданные для всего сайта
 export const metadata: Metadata = {
     title: {
-        default: "Kvartiry26 - Аренда квартир в Невинномысске",
-        template: "%s | Kvartiry26",
+        default: "Квартиры26 - Аренда квартир в Невинномысске",
+        template: "%s | Квартиры26",
     },
     metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
     description: "Сервис аренды квартир в Невинномысске. Удобный поиск, актуальные предложения, быстрое бронирование.",
     keywords: ["аренда", "квартиры", "Невинномысск", "посуточно", "жилье"],
-    authors: [{name: "Kvartiry26 Team"}],
-    creator: "Kvartiry26",
-    publisher: "Kvartiry26",
+    authors: [{name: "Квартиры26 Team"}],
+    creator: "Квартиры26",
+    publisher: "Квартиры26",
     formatDetection: {
         email: false,
         address: false,
@@ -30,15 +30,15 @@ export const metadata: Metadata = {
     openGraph: {
         type: "website",
         locale: "ru_RU",
-        siteName: "Kvartiry26",
-        title: "Kvartiry26 - Аренда квартир в Невинномысске",
+        siteName: "Квартиры26",
+        title: "Квартиры26 - Аренда квартир в Невинномысске",
         description: "Сервис аренды квартир в Невинномысске. Удобный поиск, актуальные предложения, быстрое бронирование.",
         images: [
             {
                 url: "/images/og-image.jpg",
                 width: 1200,
                 height: 630,
-                alt: "Kvartiry26",
+                alt: "Квартиры26",
             },
         ],
     },
@@ -57,7 +57,7 @@ export default function RootLayout({
             <header className="border-b border-secondary-200">
                 <div className="container-custom py-4 flex justify-between items-center">
                     <Link href="/" className="text-xl font-bold text-primary-700">
-                        Kvartiry26
+                        Квартиры26
                     </Link>
 
                     <nav>
@@ -81,7 +81,7 @@ export default function RootLayout({
                 <div className="container-custom">
                     <div className="flex flex-col md:flex-row justify-between">
                         <div>
-                            <div className="text-xl font-bold mb-4">Kvartiry26</div>
+                            <div className="text-xl font-bold mb-4">Квартиры26</div>
                             <p className="text-secondary-300 max-w-md">
                                 Удобный сервис аренды квартир в Невинномысске.
                                 Актуальные предложения, быстрое бронирование, отзывчивая поддержка.
@@ -97,7 +97,7 @@ export default function RootLayout({
                     </div>
 
                     <div className="mt-8 pt-4 border-t border-secondary-700 text-center text-secondary-400 text-sm">
-                        © {new Date().getFullYear()} Kvartiry26. Все права защищены.
+                        © {new Date().getFullYear()} Квартиры26. Все права защищены.
                     </div>
                 </div>
             </footer>

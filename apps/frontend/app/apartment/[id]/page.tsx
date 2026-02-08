@@ -22,7 +22,7 @@ export async function generateMetadata({
                 ? apartment.description.slice(0, 160).replace(/<\/?[^>]+(>|$)/g, "")
                 : `Квартира с ${apartment.rooms} комнатами, площадью ${apartment.area_m2} м²`,
             openGraph: {
-                title: `${apartment.title} | Kvartiry26`,
+                title: `${apartment.title} | Квартиры26`,
                 description: apartment.description
                     ? apartment.description.slice(0, 160).replace(/<\/?[^>]+(>|$)/g, "")
                     : `Квартира с ${apartment.rooms} комнатами, площадью ${apartment.area_m2} м²`,
