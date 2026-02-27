@@ -66,7 +66,6 @@ export default function ApartmentDetail({ apartment }: ApartmentDetailProps) {
                         />
                         <ContactButtons
                             phone="+79283209083"
-                            telegram="Kvartiry26_bot"
                         />
                     </div>
                 </div>
@@ -96,8 +95,8 @@ export default function ApartmentDetail({ apartment }: ApartmentDetailProps) {
                     <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-md">
                         <h3 className="text-lg font-semibold text-amber-700 mb-2">Обратите внимание</h3>
                         <p className="text-amber-700">
-                            В данный момент онлайн-бронирование для этой квартиры недоступно. 
-                            Пожалуйста, свяжитесь с нами по телефону или через Telegram для получения 
+                            В данный момент онлайн-бронирование для этой квартиры недоступно.
+                            Пожалуйста, свяжитесь с нами по телефону для получения
                             информации о возможности аренды.
                         </p>
                     </div>

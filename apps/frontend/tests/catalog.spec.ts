@@ -95,7 +95,6 @@ test.describe('Детальная страница квартиры', () => {
 
     // Проверяем наличие кнопок связи
     await expect(page.locator('a[href^="tel:"]')).toBeVisible();
-    await expect(page.locator('a[href^="https://t.me/"]')).toBeVisible();
 
     // Проверяем наличие характеристик
     await expect(page.locator('text=Характеристики')).toBeVisible();

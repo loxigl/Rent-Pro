@@ -87,13 +87,6 @@ export const formatPhoneUrl = (phone: string): string => {
 };
 
 /**
- * Генерирует URL для Telegram
- */
-export const formatTelegramUrl = (username: string): string => {
-  return `https://t.me/${username.replace('@', '')}`;
-};
-
-/**
  * Форматирует дату и время в формате дд.мм.гггг, чч:мм
  */
 export function formatDateTime(dateString: string): string {
